@@ -44,60 +44,60 @@ public:
         // Document Functions:
         CBLError error {};
         MutableDocument doc("doc1");
-        try { col.saveDocument(doc); } catch (CBLError e) { error = e; }
+        try { col.saveDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
         auto conflictHandler = [](MutableDocument d1, Document d2) -> bool { return true; };
-        try { (void) col.saveDocument(doc, conflictHandler); } catch (CBLError e) { error = e; }
+        try { (void) col.saveDocument(doc, conflictHandler); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { (void) !col.saveDocument(doc, kCBLConcurrencyControlLastWriteWins); } catch (CBLError e) { error = e; }
+        try { (void) !col.saveDocument(doc, kCBLConcurrencyControlLastWriteWins); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.getDocument("doc1"); } catch (CBLError e) { error = e; }
+        try { col.getDocument("doc1"); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.getMutableDocument("doc1"); } catch (CBLError e) { error = e; }
+        try { col.getMutableDocument("doc1"); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.deleteDocument(doc); } catch (CBLError e) { error = e; }
+        try { col.deleteDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { (void) !col.deleteDocument(doc, kCBLConcurrencyControlLastWriteWins); } catch (CBLError e) { error = e; }
+        try { (void) !col.deleteDocument(doc, kCBLConcurrencyControlLastWriteWins); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.purgeDocument(doc); } catch (CBLError e) { error = e; }
+        try { col.purgeDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.purgeDocument("doc1"); } catch (CBLError e) { error = e; }
+        try { col.purgeDocument("doc1"); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.getDocumentExpiration("doc1"); } catch (CBLError e) { error = e; }
+        try { col.getDocumentExpiration("doc1"); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.setDocumentExpiration("doc1", CBL_Now()); } catch (CBLError e) { error = e; }
+        try { col.setDocumentExpiration("doc1", CBL_Now()); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.createValueIndex("Value", {}); } catch (CBLError e) { error = e; }
+        try { col.createValueIndex("Value", {}); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.createFullTextIndex("FTS", {}); } catch (CBLError e) { error = e; }
+        try { col.createFullTextIndex("FTS", {}); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         error = {};
-        try { col.getIndexNames(); } catch (CBLError e) { error = e; }
+        try { col.getIndexNames(); } catch (const cbl::Error& e) { error = asCBLError(e); }
         CheckNotOpenError(error);
         
         auto listener = [](const CollectionChange* change) { };
@@ -136,8 +136,8 @@ TEST_CASE_METHOD(CollectionTest_Cpp, "C++ Delete Default Collection", "[Collecti
     CBLError error {};
     try {
         db.createCollection(kCBLDefaultCollectionName);
-    } catch (CBLError e) {
-        error = e;
+    } catch (const cbl::Error& e) {
+        error = asCBLError(e);
     }
     CHECK(error.domain == kCBLDomain);
     CHECK(error.code == kCBLErrorInvalidParameter);
@@ -166,7 +166,7 @@ TEST_CASE_METHOD(CollectionTest_Cpp, "C++ Default Collection Cannot Be Deleted",
     // Try delete the default collection - should fail and catch error:
     try {
         db.deleteCollection(kCBLDefaultCollectionName);
-    } catch (CBLError e){
+    } catch (const cbl::Error& e){
         CHECK((e.domain == kCBLDomain && e.code == kCBLErrorInvalidParameter ));
     }
 }

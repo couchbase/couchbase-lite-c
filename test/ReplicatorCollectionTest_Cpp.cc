@@ -195,7 +195,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest_Cpp, "C++ Create Replicator with zero 
     
     ExpectingExceptions x;
     CBLError error {};
-    try { auto r = Replicator(config); } catch (CBLError e) { error = e; }
+    try { auto r = Replicator(config); } catch (const cbl::Error& e) { error = asCBLError(e); }
     CheckError(error, kCBLErrorInvalidParameter);
 }
 

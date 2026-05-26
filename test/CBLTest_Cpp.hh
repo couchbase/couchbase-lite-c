@@ -58,3 +58,24 @@ public:
 void createDocWithJSON(cbl::Collection& collection, std::string docID, std::string jsonContent);
 
 void createNumberedDocsWithPrefix(cbl::Collection& collection, unsigned n, const std::string& idprefix, unsigned start = 1);
+
+/** Runs `fn` and returns true if it completes without throwing, or false if it throws a
+    cbl::Error. Lets a void, throw-on-error C++ API call be asserted in a Catch CHECK/REQUIRE,
+    e.g. `REQUIRE(succeeds([&]{ db.saveBlob(blob); }));`.
+    @note Only cbl::Error is treated as failure; other exceptions propagate. */
+template <typename Fn>
+static inline bool succeeds(Fn&& fn) {
+    try {
+        std::forward<Fn>(fn)();
+        return true;
+    } catch (const cbl::Error&) {
+        return false;
+    }
+}
+
+/** Converts a thrown cbl::Error back to the C CBLError struct, for tests that compare against
+    expected domain/code (e.g. via CheckError). Usage:
+    `catch (const cbl::Error& e) { error = asCBLError(e); }`. */
+static inline CBLError asCBLError(const cbl::Error& e) {
+    return {e.domain, e.code};
+}

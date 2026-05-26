@@ -298,7 +298,7 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Save Document into Different Collection"
     
     ExpectingExceptions ex;
     CBLError error {};
-    try { otherCol.saveDocument(doc); } catch (CBLError e) { error = e; }
+    try { otherCol.saveDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
     CheckError(error, kCBLErrorInvalidParameter);
 }
 
@@ -347,7 +347,7 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Delete Non Existing Doc", "[Document]") 
     
     ExpectingExceptions x;
     CBLError error {};
-    try { defaultCollection.deleteDocument(doc); } catch (CBLError e) { error = e; }
+    try { defaultCollection.deleteDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
     CheckError(error, kCBLErrorNotFound);
 }
 
@@ -415,7 +415,7 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Delete Document into Different Collectio
     
     ExpectingExceptions ex;
     CBLError error {};
-    try { otherCol.deleteDocument(doc); } catch (CBLError e) { error = e; }
+    try { otherCol.deleteDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
     CheckError(error, kCBLErrorInvalidParameter);
 }
 
@@ -427,11 +427,11 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Purge Non Existing Doc", "[Document]") {
     ExpectingExceptions x;
     
     CBLError error {};
-    try { defaultCollection.purgeDocument(doc); } catch (CBLError e) { error = e; }
+    try { defaultCollection.purgeDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
     CheckError(error, kCBLErrorNotFound);
     
     error = {};
-    try { defaultCollection.purgeDocument("foo"); } catch (CBLError e) { error = e; }
+    try { defaultCollection.purgeDocument("foo"); } catch (const cbl::Error& e) { error = asCBLError(e); }
     CheckError(error, kCBLErrorNotFound);
 }
 
@@ -465,7 +465,7 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Purge Already Purged Document", "[Docume
     
     ExpectingExceptions ex;
     CBLError error {};
-    try { defaultCollection.purgeDocument("foo"); } catch (CBLError e) { error = e; }
+    try { defaultCollection.purgeDocument("foo"); } catch (const cbl::Error& e) { error = asCBLError(e); }
     CheckError(error, kCBLErrorNotFound);
 }
 
@@ -477,7 +477,7 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Purge Doc from Different Collection", "[
     
     ExpectingExceptions ex;
     CBLError error {};
-    try { otherCol.purgeDocument(doc); } catch (CBLError e) { error = e; }
+    try { otherCol.purgeDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
     CheckError(error, kCBLErrorInvalidParameter);
 }
 

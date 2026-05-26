@@ -23,6 +23,7 @@
 #include <functional>
 #include <cassert>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 #if DEBUG
@@ -72,27 +73,44 @@ namespace cbl {
         }
 
         void clear()                                    {CBL_Release(_ref); _ref = nullptr;}
-        bool valid() const                              {return _ref != nullptr;} \
-        explicit operator bool() const                  {return valid();} \
-
-        static std::string asString(FLSlice s)          {return slice(s).asString();}
-        static std::string asString(FLSliceResult &&s)  {return alloc_slice(s).asString();}
-
-        static void check(bool ok, CBLError &error) {
-            if (!ok) {
-#if DEBUG
-                alloc_slice message = CBLError_Message(&error);
-                CBL_Log(kCBLLogDomainDatabase, kCBLLogError, "API returning error %d/%d: %.*s",
-                        error.domain, error.code, (int)message.size, (char*)message.buf);
-#endif
-                throw error;
-            }
-        }
+        bool valid() const                              {return _ref != nullptr;}
+        explicit operator bool() const                  {return valid();}
 
         CBLRefCounted* _cbl_nullable _ref;
 
         friend class Extension;
         friend class Transaction;
+    };
+
+    /** The exception thrown by the Couchbase Lite C++ API to report a Couchbase Lite failure.
+        It derives from `std::runtime_error` (and thus `std::exception`) and carries the
+        failure's \ref domain and \ref code (the same values as the C API's `CBLError`), plus a
+        human-readable message available via `what()`. Catch this type when you need the
+        structured error information; catch `std::exception` for general handling. */
+    struct Error: std::runtime_error {
+        Error(CBLErrorDomain domain, int code, const std::string& what)
+        : std::runtime_error(what)
+        , domain(domain)
+        , code(code)
+        {}
+        CBLErrorDomain domain;         ///< Domain of errors; a namespace for the `code`.
+        int            code;           ///< Error code, specific to the domain. 0 always means no error.
+    };
+
+    struct Base {
+        static std::string asString(FLSlice s)          {return slice(s).asString();}
+        static std::string asString(FLSliceResult &&s)  {return alloc_slice(s).asString();}
+
+        static void check(bool ok, CBLError &error) {
+            if (!ok) {
+                alloc_slice message = CBLError_Message(&error);
+#if DEBUG
+                CBL_Log(kCBLLogDomainDatabase, kCBLLogError, "API returning error %d/%d: %.*s",
+                        error.domain, error.code, (int)message.size, (char*)message.buf);
+#endif
+                throw cbl::Error{error.domain, error.code, message.asString()};
+            }
+        }
     };
 
 // Internal use only: Copy/move ctors and assignment ops that have to be declared in subclasses

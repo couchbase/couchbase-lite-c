@@ -195,3 +195,109 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blobs in ResultSet", "[Blob]") {
     }
     CHECK(rowCount == 10);
 }
+
+
+TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob blobEquals", "[Blob]") {
+    slice content1 = "This is the content of the blob 1.";
+    slice content2 = "This is the content of the blob 2.";
+
+    Blob blob1(kBlobContentType, content1);
+    Blob blob2(kBlobContentType, content1);
+
+    BlobWriteStream writer(db);
+    writer.write(content1);
+    Blob blob3(kBlobContentType, writer);
+
+    Blob blob4(kBlobContentType, content2);
+
+    CHECK(blob1.digest() == blob2.digest());
+    CHECK(blob1.blobEquals(blob2));
+    CHECK(blob1.blobEquals(blob3));
+
+    CHECK(blob1.digest() != blob4.digest());
+    CHECK(!blob1.blobEquals(blob4));
+}
+
+
+TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob createJSON", "[Blob]") {
+    Blob blob(kBlobContentType, kBlobContents);
+    string json = blob.createJSON();
+    string expected = string("{\"@type\":\"blob\",\"content_type\":\"") + kBlobContentType
+                    + "\",\"digest\":\"" + kBlobDigest
+                    + "\",\"length\":" + to_string(kBlobContents.size) + "}";
+    CHECK(json == expected);
+}
+
+
+TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob read stream position", "[Blob]") {
+    slice content = "This is the content of the blob 1.";
+    Blob blob(kBlobContentType, content);
+    db.saveBlob(blob);
+
+    unique_ptr<BlobReadStream> in(blob.openContentStream());
+    CHECK(in->position() == 0);
+
+    char buf[20];
+    CHECK(in->read(buf, 20) == 20);
+    CHECK(in->position() == 20);
+
+    CHECK(in->read(buf, 20) == 14);
+    CHECK(in->position() == content.size);
+
+    CHECK(in->read(buf, 20) == 0);
+    CHECK(in->position() == content.size);
+}
+
+
+TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob read stream seek", "[Blob]") {
+    slice content = "This is the content of the blob 1.";
+    Blob blob(kBlobContentType, content);
+    db.saveBlob(blob);
+
+    unique_ptr<BlobReadStream> in(blob.openContentStream());
+    char buf[20];
+
+    // Seek from start, then read:
+    CHECK(in->seek(12, kCBLSeekModeFromStart) == 12);
+    CHECK(in->position() == 12);
+    CHECK(in->read(buf, 7) == 7);
+    CHECK(memcmp(buf, &content[12], 7) == 0);
+    CHECK(in->position() == 12 + 7);
+
+    // Seek relative to current position:
+    CHECK(in->seek(1, kCBLSeekModeRelative) == 20);
+    CHECK(in->position() == 20);
+
+    // Seek from end:
+    CHECK(in->seek(-5, kCBLSeekModeFromEnd) == int64_t(content.size) - 5);
+    CHECK(in->position() == content.size - 5);
+
+    // Seek past EOF: pinned to EOF, not an error:
+    CHECK(in->seek(9999, kCBLSeekModeFromStart) == int64_t(content.size));
+    CHECK(in->position() == content.size);
+}
+
+
+TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob read stream seek to negative position throws", "[Blob][!throws]") {
+    slice content = "This is the content of the blob 1.";
+    Blob blob(kBlobContentType, content);
+    db.saveBlob(blob);
+
+    unique_ptr<BlobReadStream> in(blob.openContentStream());
+
+    ExpectingExceptions x;
+    CBLError thrown {};
+    bool threw = false;
+    try {
+        in->seek(-999, kCBLSeekModeFromEnd);
+    } catch (const cbl::Error& e) {
+        threw = true;
+        thrown = asCBLError(e);
+    }
+    CHECK(threw);
+    CHECK(thrown.domain == kCBLDomain);
+    CHECK(thrown.code == kCBLErrorInvalidParameter);
+
+    // Position is unchanged if error occurs.
+    CHECK(in->position() == 0);
+}

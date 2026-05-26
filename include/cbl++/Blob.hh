@@ -17,8 +17,10 @@
 //
 
 #pragma once
+#include "cbl++/Base.hh"
 #include "cbl++/Document.hh"
 #include "cbl/CBLBlob.h"
+#include "cbl/CBLDatabase.h"
 #include "fleece/Mutable.hh"
 #include <string>
 
@@ -63,35 +65,50 @@ namespace cbl {
         :RefCounted((CBLRefCounted*) FLDict_GetBlob(d))
         { }
 
+        bool blobEquals(const Blob& other) const    {return CBLBlob_Equals(ref(), other.ref());}
+
         /** Returns the length in bytes of a blob's content (from its `length` property). */
         uint64_t length() const                     {return CBLBlob_Length(ref());}
         
         /** Returns a blob's MIME type, if its metadata has a `content_type` property. */
-        std::string contentType() const             {return asString(CBLBlob_ContentType(ref()));}
+        std::string contentType() const             {return Base::asString(CBLBlob_ContentType(ref()));}
         
         /** Returns the cryptographic digest of a blob's content (from its `digest` property). */
-        std::string digest() const                  {return asString(CBLBlob_Digest(ref()));}
+        std::string digest() const                  {return Base::asString(CBLBlob_Digest(ref()));}
         
         /** Returns a blob's metadata. This includes the `digest`, `length`, `content_type`,
             and `@type` properties, as well as any custom ones that may have been added. */
         fleece::Dict properties() const             {return CBLBlob_Properties(ref());}
 
+        /** Returns the JSON representation of the blob's metadata dictionary. */
+        std::string createJSON() const              {return alloc_slice(CBLBlob_CreateJSON(ref())).asString();}
+
         // Allows Blob to be assigned to mutable Dict/Array item, e.g. `dict["foo"] = blob`
         operator fleece::Dict() const               {return properties();}
 
-        /** Reads the blob's content into memory and returns them. */
+        /** Reads the blob's entire content into memory and returns it.
+            @note  This loads the whole blob at once. For large blobs, prefer
+                   \ref openContentStream to read the content incrementally.
+            @return  The blob's content as an \ref alloc_slice that owns the loaded bytes.
+            @throws cbl::Error  If the content cannot be read (for example, the blob's
+                    data is not available in the database). */
         alloc_slice loadContent() {
             CBLError error;
             fleece::alloc_slice content = CBLBlob_Content(ref(), &error);
-            check(content.buf, error);
+            Base::check(content.buf, error);
             return content;
         }
 
-        /** Opens a stream for reading a blob's content. */
+        /** Opens a stream for reading a blob's content.
+            @note  The caller takes ownership of the returned stream and must `delete` it
+                   (e.g. wrap it in a `std::unique_ptr<BlobReadStream>`).
+            @return  A new \ref BlobReadStream positioned at the start of the blob's content. */
         inline BlobReadStream* openContentStream();
 
     protected:
-        Blob(CBLRefCounted* r)                      :RefCounted(r) { }
+        friend class Database;
+        // !Adopt the RefCounted argument
+        Blob(CBLRefCounted* r)                      {_ref = r;}
 
         CBL_REFCOUNTED_BOILERPLATE(Blob, RefCounted, CBLBlob)
     };
@@ -99,13 +116,16 @@ namespace cbl {
     /** A stream for writing a new blob to the database. */
     class BlobReadStream {
     public:
-        /** Opens a stream for reading a blob's content. */
+        using SeekBase = CBLSeekBase;
+
+        /** Opens a stream for reading a blob's content.
+            @param blob  The blob whose content will be read. */
         BlobReadStream(Blob *blob) {
             CBLError error;
             _stream = CBLBlob_OpenContentStream(blob->ref(), &error);
-            if (!_stream) throw error;
+            Base::check(_stream, error);
         }
-        
+
         ~BlobReadStream() {
             CBLBlobReader_Close(_stream);
         }
@@ -117,16 +137,31 @@ namespace cbl {
         size_t read(void *dst, size_t maxLength) {
             CBLError error;
             int bytesRead = CBLBlobReader_Read(_stream, dst, maxLength, &error);
-            if (bytesRead < 0)
-                throw error;
+            Base::check(bytesRead >= 0, error);
             return size_t(bytesRead);
+        }
+
+        /** Sets the position of a CBLBlobReadStream.
+            @param offset  The byte offset in the stream (relative to the `mode`).
+            @param base    The base position from which the offset is calculated.
+            @return  The new absolute position, or -1 on failure. */
+        int64_t seek(int64_t offset, SeekBase base) {
+            CBLError error{};
+            int64_t ret = CBLBlobReader_Seek(_stream, offset, base, &error);
+            Base::check(ret >= 0, error);
+            return ret;
+        }
+
+        /** Returns the current position of a CBLBlobReadStream. */
+        uint64_t position() {
+            return CBLBlobReader_Position(_stream);
         }
 
     private:
         CBLBlobReadStream* _cbl_nullable _stream {nullptr};
     };
 
-    BlobReadStream* Blob::openContentStream() {
+    inline BlobReadStream* Blob::openContentStream() {
         return new BlobReadStream(this);
     }
 
@@ -137,7 +172,7 @@ namespace cbl {
         BlobWriteStream(Database db) {
             CBLError error;
             _writer = CBLBlobWriter_Create(db.ref(), &error);
-            if (!_writer) throw error;
+            Base::check(_writer, error);
         }
 
         ~BlobWriteStream() {
@@ -156,7 +191,7 @@ namespace cbl {
         void write(const void *src, size_t length) {
             CBLError error;
             if (!CBLBlobWriter_Write(_writer, src, length, &error))
-                throw error;
+                Base::check(false, error);
         }
 
     private:
@@ -167,6 +202,20 @@ namespace cbl {
     inline Blob::Blob(slice contentType, BlobWriteStream& writer) {
         _ref = (CBLRefCounted*) CBLBlob_CreateWithStream(contentType, writer._writer);
         writer._writer = nullptr;
+    }
+
+    inline Blob Database::getBlob(fleece::Dict properties) const {
+        CBLError error{};
+        const CBLBlob* blob = CBLDatabase_GetBlob(this->ref(), properties, &error);
+        // Per the C API: null with error.code==0 is a legitimate "not found";
+        // null with a populated error is a real failure -> throw.
+        Base::check(blob != nullptr || error.code == 0, error);
+        return {(CBLRefCounted*)blob};
+    }
+
+    inline void Database::saveBlob(const Blob& blob) {
+        CBLError error{};
+        Base::check(CBLDatabase_SaveBlob(this->ref(), blob.ref(), &error), error);
     }
 }
 

@@ -65,15 +65,15 @@ namespace cbl {
         // Accessors:
         
         /** The collection's name. */
-        std::string name() const                        {return asString(CBLCollection_Name(ref()));}
+        std::string name() const                        {return Base::asString(CBLCollection_Name(ref()));}
         
         /** The collection's fully qualified name in the '<scope-name>.<collection-name>' format. */
-        std::string fullName() const                    {return asString(CBLCollection_FullName(ref()));}
+        std::string fullName() const                    {return Base::asString(CBLCollection_FullName(ref()));}
         
         /** The scope's name. */
         std::string scopeName() const {
             auto scope = CBLCollection_Scope(ref());
-            auto scopeName = asString(CBLScope_Name(scope));
+            auto scopeName = Base::asString(CBLScope_Name(scope));
             CBLScope_Release(scope);
             return scopeName;
         }
@@ -89,13 +89,17 @@ namespace cbl {
         /** Reads a document from the collection in an immutable form.
             @note If you are reading the document in order to make changes to it, call \ref Collection::getMutableDocument() instead.
             @param docID  The ID of the document.
-            @return A new \ref Document instance, or NULL if the doc doesn't exist, or throws if an error occurred. */
+            @return A new \ref Document instance, or a falsy Document if the doc doesn't exist.
+            @throws cbl::Error  On a database error. Note a non-existent document is not an
+                    error — that returns a falsy Document rather than throwing. */
         inline Document getDocument(slice docID) const;
         
         /** Reads a document from the collection in mutable form that can be updated and saved.
             (This function is otherwise identical to \ref Collection::getDocument(slice docID).)
             @param docID  The ID of the document.
-            @return A new \ref Document instance, or NULL if the doc doesn't exist, or throws if an error occurred. */
+            @return A new \ref Document instance, or a falsy Document if the doc doesn't exist.
+            @throws cbl::Error  On a database error. Note a non-existent document is not an
+                    error — that returns a falsy Document rather than throwing. */
         inline MutableDocument getMutableDocument(slice docID) const;
 
         /** Saves a (mutable) document to the collection.
@@ -150,7 +154,7 @@ namespace cbl {
             CBLError error;
             bool purged = CBLCollection_PurgeDocumentByID(ref(), docID, &error);
             if (!purged && error.code != 0)
-                throw error;
+                Base::check(false, error);
             return purged;
         }
         
@@ -159,11 +163,11 @@ namespace cbl {
             to set a document's expiration time.
             @param docID  The ID of the document.
             @return The expiration time as a CBLTimestamp (milliseconds since Unix epoch),
-                  or 0 if the document does not have an expiration */
+                  or 0 if the document does not have an expiration. */
         time_t getDocumentExpiration(slice docID) const {
             CBLError error;
             time_t exp = CBLCollection_GetDocumentExpiration(ref(), docID, &error);
-            check(exp >= 0, error);
+            Base::check(exp >= 0, error);
             return exp;
         }
 
@@ -173,7 +177,7 @@ namespace cbl {
                               or 0 if the document should never expire. */
         void setDocumentExpiration(slice docID, time_t expiration) {
             CBLError error;
-            check(CBLCollection_SetDocumentExpiration(ref(), docID, expiration, &error), error);
+            Base::check(CBLCollection_SetDocumentExpiration(ref(), docID, expiration, &error), error);
         }
         
         // Indexes:
@@ -186,7 +190,7 @@ namespace cbl {
             @param config  The value index config. */
         void createValueIndex(slice name, CBLValueIndexConfiguration config) {
             CBLError error;
-            check(CBLCollection_CreateValueIndex(ref(), name, config, &error), error);
+            Base::check(CBLCollection_CreateValueIndex(ref(), name, config, &error), error);
         }
         
         /** Creates a full-text index in the collection.
@@ -197,7 +201,7 @@ namespace cbl {
             @param config  The full-text index config. */
         void createFullTextIndex(slice name, CBLFullTextIndexConfiguration config) {
             CBLError error;
-            check(CBLCollection_CreateFullTextIndex(ref(), name, config, &error), error);
+            Base::check(CBLCollection_CreateFullTextIndex(ref(), name, config, &error), error);
         }
         
         /** Creates an array index for use with UNNEST queries in the collection.
@@ -208,7 +212,7 @@ namespace cbl {
             @param config  The array index config. */
         void createArrayIndex(slice name, CBLArrayIndexConfiguration config) {
             CBLError error;
-            check(CBLCollection_CreateArrayIndex(ref(), name, config, &error), error);
+            Base::check(CBLCollection_CreateArrayIndex(ref(), name, config, &error), error);
         }
         
 #ifdef COUCHBASE_ENTERPRISE
@@ -225,20 +229,20 @@ namespace cbl {
         /** Deletes an index given its name from the collection. */
         void deleteIndex(slice name) {
             CBLError error;
-            check(CBLCollection_DeleteIndex(ref(), name, &error), error);
+            Base::check(CBLCollection_DeleteIndex(ref(), name, &error), error);
         }
 
         /** Returns the names of the indexes in the collection, as a Fleece array of strings. */
         fleece::RetainedArray getIndexNames() {
-            CBLError error;
+            CBLError error{};
             FLMutableArray flNames = CBLCollection_GetIndexNames(ref(), &error);
-            check(flNames, error);
+            Base::check(error.code == 0, error);
             fleece::RetainedArray names(flNames);
             FLArray_Release(flNames);
             return names;
         }
         
-        /** Get an index by name. If the index doesn't exist, the NULL QueryIndex object will be returned. */
+        /** Get an index by name. If the index doesn't exist, a falsy QueryIndex object will be returned. */
         inline QueryIndex getIndex(slice name);
         
         // Listeners:
@@ -276,7 +280,7 @@ namespace cbl {
         
         static Collection adopt(const CBLCollection* _cbl_nullable d, CBLError *error) {
             if (!d && error->code != 0)
-                throw *error;
+                Base::check(false, *error);
             Collection col;
             col._ref = (CBLRefCounted*)d;
             return col;

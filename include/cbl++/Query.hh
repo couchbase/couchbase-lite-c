@@ -51,7 +51,7 @@ namespace cbl {
         Query(const Database& db, CBLQueryLanguage language, slice queryString) {
             CBLError error;
             auto q = CBLDatabase_CreateQuery(db.ref(), language, queryString, nullptr, &error);
-            check(q, error);
+            Base::check(q, error);
             _ref = (CBLRefCounted*)q;
         }
 
@@ -155,7 +155,11 @@ namespace cbl {
     class ResultSet : private RefCounted {
     public:
         using iterator = ResultSetIterator;
+
+        /** Returns an iterator positioned at the first result. */
         inline iterator begin();
+
+        /** Returns an iterator marking the end of the results. */
         inline iterator end();
 
     private:
@@ -212,19 +216,24 @@ namespace cbl {
     inline ResultSet Query::execute() {
         CBLError error;
         auto rs = CBLQuery_Execute(ref(), &error);
-        check(rs, error);
+        Base::check(rs, error);
         return ResultSet::adopt(rs);
     }
 
+    /** The token returned by \ref Query::addChangeListener for a live query. It holds the
+        listener registration, which is removed when this token is destroyed or
+        \ref ListenerToken::remove() is called. */
     class Query::ChangeListener : public ListenerToken<Change> {
     public:
         ChangeListener(): ListenerToken<Change>() { }
-        
+
         ChangeListener(Query query, Callback cb)
         :ListenerToken<Change>(cb)
         ,_query(std::move(query))
         { }
 
+        /** Returns the most recent results computed by the live query.
+            @throws std::runtime_error  If called on an uninitialized (default-constructed) listener. */
         ResultSet results() {
             if (!_query) {
                 throw std::runtime_error("Not allowed to call on uninitialized ChangeListeners");
@@ -236,7 +245,7 @@ namespace cbl {
         static ResultSet getResults(Query query, CBLListenerToken* token) {
             CBLError error;
             auto rs = CBLQuery_CopyCurrentResults(query.ref(), token, &error);
-            check(rs, error);
+            Base::check(rs, error);
             return ResultSet::adopt(rs);
         }
 
@@ -244,14 +253,17 @@ namespace cbl {
         friend Change;
     };
 
+    /** The change passed to a live query's listener callback, giving access to the updated results. */
     class Query::Change {
     public:
         Change(const Change& src) : _query(src._query), _token(src._token) {}
 
+        /** Returns the query's results as of this change. */
         ResultSet results() {
             return ChangeListener::getResults(_query, _token);
         }
 
+        /** Returns the query that produced this change. */
         Query query() {
             return _query;
         }

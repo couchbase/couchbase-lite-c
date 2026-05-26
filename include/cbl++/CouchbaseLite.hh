@@ -19,11 +19,39 @@
 // VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
 // future releases.
 
+/** \defgroup cbl_cpp Couchbase Lite C++ API
+    @{
+
+    \section error_handling Error handling
+
+    On failure, functions in this API report errors by throwing exceptions derived from
+    `std::exception`, so callers should be prepared to catch `std::exception`.
+
+    Couchbase Lite-specific failures are thrown as \ref cbl::Error, a subclass of
+    `std::runtime_error` that encapsulates the failure's `domain`, `code`, and message.
+    Catch `cbl::Error` when you need that structured information; catch `std::exception`
+    for general handling.
+    (The raw C-API `CBLError` status struct is wrapped by `cbl::Error` and is never
+    thrown directly across this API.)
+
+    `noexcept` is applied only to special member functions (copy/move constructors and
+    assignment operators, and destructors), where the no-throw guarantee is structural and
+    permanent. It is deliberately omitted from other methods — even ones that cannot throw
+    today — so that their implementations remain free to throw in a future release without
+    a breaking API change. Do not infer anything from the absence of `noexcept`; assume any
+    method may throw `cbl::Error` (or another `std::exception`) on failure. Individual
+    functions add an `@throws cbl::Error` note only when the specific trigger, or a
+    non-throwing outcome worth contrasting (such as a lookup that returns an empty result
+    instead of throwing when an item doesn't exist), is not obvious from the signature.
+
+    @} */
+
 #pragma once
 #include "Blob.hh"
 #include "Collection.hh"
 #include "Database.hh"
 #include "Document.hh"
+#include "Encryptable.hh"
 #include "LogSinks.hh"
 #include "Prediction.hh"
 #include "Query.hh"

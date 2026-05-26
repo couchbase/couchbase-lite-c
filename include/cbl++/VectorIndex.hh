@@ -180,7 +180,7 @@ namespace cbl {
 
     void Collection::createVectorIndex(slice name, const VectorIndexConfiguration &config) {
         CBLError error {};
-        check(CBLCollection_CreateVectorIndex(ref(), name, config, &error), error);
+        Base::check(CBLCollection_CreateVectorIndex(ref(), name, config, &error), error);
     }
 }
 

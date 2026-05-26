@@ -54,13 +54,14 @@ namespace cbl {
         virtual ~PredictiveModel() = default;
     };
 
-    static std::unordered_map<slice, std::unique_ptr<PredictiveModel>> _sPredictiveModels;
-
     /** Predictive Model Registation 
         This class provides static methods to register and unregister predictive models. */
     class Prediction {
     public:
-        /** Registers a predictive model with the given name. */
+        /** Registers a predictive model with the given name.
+            @param name  The name used to refer to the model in a query's PREDICTION() function.
+            @param model  The model implementation; ownership is transferred to the registry until
+                          it is unregistered. */
         static void registerModel(slice name, std::unique_ptr<PredictiveModel> model) {
             auto prediction = [](void* context, FLDict input) {
                 auto m = (PredictiveModel*)context;
@@ -75,11 +76,15 @@ namespace cbl {
             _sPredictiveModels[name] = std::move(model);
         }
         
-        /** Unregisters the predictive model with the given name. */
+        /** Unregisters the predictive model with the given name.
+            @param name  The name the model was registered under. */
         static void unregisterModel(slice name) {
             CBL_UnregisterPredictiveModel(name);
             _sPredictiveModels.erase(name);
         }
+
+    private:
+        inline static std::unordered_map<slice, std::unique_ptr<PredictiveModel>> _sPredictiveModels;
     };
 }
 

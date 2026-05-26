@@ -25,28 +25,43 @@
 CBL_ASSUME_NONNULL_BEGIN
 
 namespace cbl {
+    /** Controls where Couchbase Lite writes its log messages. There are three independent
+        sinks — console, custom (a user callback), and file — each configured separately.
+        Disable a sink by setting its log level to \ref kCBLLogNone. */
     class LogSinks {
     public:
+        /** Sets the console log sink. To disable it, set the sink's log level to \ref kCBLLogNone.
+            @param sink  The console log sink configuration. */
         static void setConsole(const CBLConsoleLogSink& sink) {
             CBLLogSinks_SetConsole(sink);
         }
-        
+
+        /** Returns the current console log sink. It is enabled at the warning level for all
+            domains by default. */
         static CBLConsoleLogSink console() {
             return CBLLogSinks_Console();
         }
-        
+
+        /** Sets the custom log sink, whose callback receives each log message. To disable it,
+            set the sink's log level to \ref kCBLLogNone.
+            @param sink  The custom log sink configuration. */
         static void setCustom(const CBLCustomLogSink& sink) {
             CBLLogSinks_SetCustom(sink);
         }
-                
+
+        /** Returns the current custom log sink. It is disabled by default. */
         static CBLCustomLogSink custom() {
             return CBLLogSinks_CustomSink();
         }
-                
+
+        /** Sets the file log sink, which writes log messages to files in a directory. To disable
+            it, set the sink's log level to \ref kCBLLogNone.
+            @param sink  The file log sink configuration. */
         static void setFile(const CBLFileLogSink& sink) {
             CBLLogSinks_SetFile(sink);
         }
-                
+
+        /** Returns the current file log sink. It is disabled by default. */
         static CBLFileLogSink file() {
             return CBLLogSinks_File();
         }
