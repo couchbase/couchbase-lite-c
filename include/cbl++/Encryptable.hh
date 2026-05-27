@@ -84,10 +84,10 @@ public:
     }
 
     /** Returns the value to be encrypted by the push replicator. */
-    fleece::Value value()     {return CBLEncryptable_Value(ref());}
+    fleece::Value value() const     {return CBLEncryptable_Value(ref());}
 
     /** Returns the Encryptable's underlying dictionary representation (its persistent form). */
-    fleece::Dict properties() {return CBLEncryptable_Properties(ref());}
+    fleece::Dict properties() const {return CBLEncryptable_Properties(ref());}
 
     /** Returns true if the given dictionary is the persistent form of an Encryptable.
         @param dict  The dictionary to test. */

@@ -144,7 +144,7 @@ namespace cbl {
         /** Sets the position of a CBLBlobReadStream.
             @param offset  The byte offset in the stream (relative to the `mode`).
             @param base    The base position from which the offset is calculated.
-            @return  The new absolute position, or -1 on failure. */
+            @return  The new absolute position, or throw on failure. */
         int64_t seek(int64_t offset, SeekBase base) {
             CBLError error{};
             int64_t ret = CBLBlobReader_Seek(_stream, offset, base, &error);
