@@ -67,12 +67,12 @@ namespace cbl {
                 auto m = (PredictiveModel*)context;
                 return FLMutableDict_Retain((FLMutableDict) m->prediction(input));
             };
-            
+
             CBLPredictiveModel config { };
             config.context = model.get();
             config.prediction = prediction;
             CBL_RegisterPredictiveModel(name, config);
-            
+
             _sPredictiveModels[name] = std::move(model);
         }
         

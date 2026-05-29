@@ -227,7 +227,7 @@ void CBLTest_Cpp::resetDatabase(bool deleteDatabase) {
 cbl::Database CBLTest_Cpp::openDatabaseNamed(slice name, bool createEmpty){
     auto config = CBLTest::databaseConfig();
     if (createEmpty == true){
-        cbl::Database::deleteDatabase(name, config.directory);
+        cbl::Database::deleteDatabase(name, (slice)config.directory);
     }
     cbl::Database database = cbl::Database(name, config);
     REQUIRE(database);

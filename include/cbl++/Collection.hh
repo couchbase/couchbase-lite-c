@@ -144,16 +144,17 @@ namespace cbl {
             Purges are _not_ replicated. If the document is changed on a server, it will be re-created
             when pulled.
             @note If you don't have the document in memory already, \ref purgeDocument(slice docID) is a simpler shortcut.
-            @param doc  The document to purge. */
-        inline void purgeDocument(Document &doc);
-        
+            @param doc  The document to purge.
+            @return True if the document was purged, false if it doesn't exist. */
+        inline bool purgeDocument(Document &doc);
+
         /** Purges a document by its ID from the collection.
             @param docID  The document ID to purge.
             @return True if the document was purged, false if it doesn't exist. */
         bool purgeDocument(slice docID) {
             CBLError error;
             bool purged = CBLCollection_PurgeDocumentByID(ref(), docID, &error);
-            if (!purged && error.code != 0)
+            if ( !purged && !(error.domain == kCBLDomain && error.code == kCBLErrorNotFound) )
                 internal::check(false, error);
             return purged;
         }

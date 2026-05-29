@@ -165,7 +165,7 @@ TEST_CASE_METHOD(CollectionTest_Cpp, "C++ Default Collection Cannot Be Deleted",
 
     // Try delete the default collection - should fail and catch error:
     try {
-        db.deleteCollection(kCBLDefaultCollectionName);
+        db.deleteCollection((slice)kCBLDefaultCollectionName);
     } catch (const cbl::Error& e){
         CHECK((e.domain == kCBLDomain && e.code == kCBLErrorInvalidParameter ));
     }
@@ -174,11 +174,11 @@ TEST_CASE_METHOD(CollectionTest_Cpp, "C++ Default Collection Cannot Be Deleted",
 #endif
 
 TEST_CASE_METHOD(CollectionTest_Cpp, "C++ Create And Get Collection In Default Scope", "[Collection]") {
-    Collection col = db.getCollection("colA", kCBLDefaultScopeName);
+    Collection col = db.getCollection("colA", (slice)kCBLDefaultScopeName);
     REQUIRE(!col);
     
     SECTION("Specify scope name") {
-        col = db.createCollection("colA", kCBLDefaultScopeName);
+        col = db.createCollection("colA", (slice)kCBLDefaultScopeName);
     }
     
     SECTION("Not specify scope name") {

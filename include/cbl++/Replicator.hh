@@ -408,7 +408,7 @@ namespace cbl {
             @note A `false` result means the document is not pending, _or_ there was an error.
                   To tell the difference, compare the error code to zero.
             @warning If the given collection is not part of the replication, an error will be thrown. */
-        bool isDocumentPending(fleece::slice docID, Collection& collection) const {
+        bool isDocumentPending(slice docID, Collection& collection) const {
             CBLError error;
             bool pending = CBLReplicator_IsDocumentPending(ref(), docID, collection.ref(), &error);
             internal::check(pending || error.code == 0, error);

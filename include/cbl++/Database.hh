@@ -317,7 +317,7 @@ namespace cbl {
         /** Returns the names of all collections in the scope.
             @param scopeName  The name of the scope.
             @return The names of all collections in the scope, or throws if an error occurred. */
-        fleece::MutableArray getCollectionNames(slice scopeName =kCBLDefaultScopeName) const {
+        fleece::MutableArray getCollectionNames(slice scopeName = kCBLDefaultScopeName) const {
             CBLError error {};
             FLMutableArray flNames = CBLDatabase_CollectionNames(ref(), scopeName, &error);
             internal::check(error.code == 0, error);
@@ -332,7 +332,7 @@ namespace cbl {
             @return The \ref Collection, or a falsy Collection if it doesn't exist.
             @throws cbl::Error  On a database error. Note a non-existent collection is not an
                     error — that returns a falsy Collection rather than throwing. */
-        inline Collection getCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName) const;
+        inline Collection getCollection(slice collectionName, slice scopeName = kCBLDefaultScopeName) const;
         
         /** Create a new collection.
             The naming rules of the collections and scopes are as follows:
@@ -344,13 +344,13 @@ namespace cbl {
             @param collectionName  The name of the collection.
             @param scopeName  The name of the scope.
             @return A \ref Collection instance. */
-        inline Collection createCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName);
+        inline Collection createCollection(slice collectionName, slice scopeName = kCBLDefaultScopeName);
         
         /** Delete an existing collection.
             @note The default collection cannot be deleted.
             @param collectionName  The name of the collection.
             @param scopeName  The name of the scope. */
-        inline void deleteCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName) {
+        inline void deleteCollection(slice collectionName, slice scopeName = kCBLDefaultScopeName) {
             CBLError error {};
             internal::check(CBLDatabase_DeleteCollection(ref(), collectionName, scopeName, &error), error);
         }
@@ -405,7 +405,7 @@ namespace cbl {
         CBL_REFCOUNTED_WITHOUT_COPY_MOVE_BOILERPLATE(Database, RefCounted, CBLDatabase)
 
     private:
-        void open(slice& name, const CBLDatabaseConfiguration* _cbl_nullable config) {
+        void open(slice name, const CBLDatabaseConfiguration* _cbl_nullable config) {
             CBLError error {};
             _ref = (CBLRefCounted*)CBLDatabase_Open(name, config, &error);
             internal::check(_ref != nullptr, error);

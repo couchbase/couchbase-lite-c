@@ -412,7 +412,7 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Delete Doc with FailOnConflict", "[Docum
 
 TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Delete Document into Different Collection", "[Document]") {
     MutableDocument doc = createDocument(defaultCollection, "foo", "greeting", "Howdy");
-    
+
     ExpectingExceptions ex;
     CBLError error {};
     try { otherCol.deleteDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
@@ -423,16 +423,11 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Delete Document into Different Collectio
 
 TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Purge Non Existing Doc", "[Document]") {
     MutableDocument doc("foo");
-    
+
     ExpectingExceptions x;
-    
-    CBLError error {};
-    try { defaultCollection.purgeDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
-    CheckError(error, kCBLErrorNotFound);
-    
-    error = {};
-    try { defaultCollection.purgeDocument("foo"); } catch (const cbl::Error& e) { error = asCBLError(e); }
-    CheckError(error, kCBLErrorNotFound);
+
+    CHECK(!defaultCollection.purgeDocument(doc));
+    CHECK(!defaultCollection.purgeDocument("foo"));
 }
 
 TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Purge Doc", "[Document]") {
@@ -455,18 +450,15 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Purge Doc", "[Document]") {
 
 TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Purge Already Purged Document", "[Document]") {
     createDocument(defaultCollection, "foo", "greeting", "Howdy");
-    
+
     Document doc = defaultCollection.getDocument("foo");
     REQUIRE(doc);
-    
+
     defaultCollection.purgeDocument(doc);
     doc = defaultCollection.getDocument("foo");
     CHECK(!doc);
-    
     ExpectingExceptions ex;
-    CBLError error {};
-    try { defaultCollection.purgeDocument("foo"); } catch (const cbl::Error& e) { error = asCBLError(e); }
-    CheckError(error, kCBLErrorNotFound);
+    CHECK(!defaultCollection.purgeDocument("foo"));
 }
 
 TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Purge Doc from Different Collection", "[Document]") {
