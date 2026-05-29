@@ -51,7 +51,7 @@ namespace cbl {
         Query(const Database& db, CBLQueryLanguage language, slice queryString) {
             CBLError error;
             auto q = CBLDatabase_CreateQuery(db.ref(), language, queryString, nullptr, &error);
-            Base::check(q, error);
+            internal::check(q, error);
             _ref = (CBLRefCounted*)q;
         }
 
@@ -216,7 +216,7 @@ namespace cbl {
     inline ResultSet Query::execute() {
         CBLError error;
         auto rs = CBLQuery_Execute(ref(), &error);
-        Base::check(rs, error);
+        internal::check(rs, error);
         return ResultSet::adopt(rs);
     }
 
@@ -245,7 +245,7 @@ namespace cbl {
         static ResultSet getResults(Query query, CBLListenerToken* token) {
             CBLError error;
             auto rs = CBLQuery_CopyCurrentResults(query.ref(), token, &error);
-            Base::check(rs, error);
+            internal::check(rs, error);
             return ResultSet::adopt(rs);
         }
 

@@ -71,10 +71,10 @@ namespace cbl {
         uint64_t length() const                     {return CBLBlob_Length(ref());}
         
         /** Returns a blob's MIME type, if its metadata has a `content_type` property. */
-        std::string contentType() const             {return Base::asString(CBLBlob_ContentType(ref()));}
+        std::string contentType() const             {return internal::asString(CBLBlob_ContentType(ref()));}
         
         /** Returns the cryptographic digest of a blob's content (from its `digest` property). */
-        std::string digest() const                  {return Base::asString(CBLBlob_Digest(ref()));}
+        std::string digest() const                  {return internal::asString(CBLBlob_Digest(ref()));}
         
         /** Returns a blob's metadata. This includes the `digest`, `length`, `content_type`,
             and `@type` properties, as well as any custom ones that may have been added. */
@@ -95,7 +95,7 @@ namespace cbl {
         alloc_slice loadContent() {
             CBLError error;
             fleece::alloc_slice content = CBLBlob_Content(ref(), &error);
-            Base::check(content.buf, error);
+            internal::check(content.buf, error);
             return content;
         }
 
@@ -106,11 +106,15 @@ namespace cbl {
         inline BlobReadStream* openContentStream();
 
     protected:
-        friend class Database;
-        // !Adopt the RefCounted argument
-        Blob(CBLRefCounted* r)                      {_ref = r;}
 
         CBL_REFCOUNTED_BOILERPLATE(Blob, RefCounted, CBLBlob)
+
+    private:
+        friend class Database;
+        struct adopt_t {};
+        inline static constexpr adopt_t adopt{};
+
+        Blob(CBLBlob* cObj, adopt_t) { _ref = (CBLRefCounted*)cObj; }
     };
 
     /** A stream for writing a new blob to the database. */
@@ -123,7 +127,7 @@ namespace cbl {
         BlobReadStream(Blob *blob) {
             CBLError error;
             _stream = CBLBlob_OpenContentStream(blob->ref(), &error);
-            Base::check(_stream, error);
+            internal::check(_stream, error);
         }
 
         ~BlobReadStream() {
@@ -137,7 +141,7 @@ namespace cbl {
         size_t read(void *dst, size_t maxLength) {
             CBLError error;
             int bytesRead = CBLBlobReader_Read(_stream, dst, maxLength, &error);
-            Base::check(bytesRead >= 0, error);
+            internal::check(bytesRead >= 0, error);
             return size_t(bytesRead);
         }
 
@@ -148,7 +152,7 @@ namespace cbl {
         int64_t seek(int64_t offset, SeekBase base) {
             CBLError error{};
             int64_t ret = CBLBlobReader_Seek(_stream, offset, base, &error);
-            Base::check(ret >= 0, error);
+            internal::check(ret >= 0, error);
             return ret;
         }
 
@@ -172,7 +176,7 @@ namespace cbl {
         BlobWriteStream(Database db) {
             CBLError error;
             _writer = CBLBlobWriter_Create(db.ref(), &error);
-            Base::check(_writer, error);
+            internal::check(_writer, error);
         }
 
         ~BlobWriteStream() {
@@ -191,7 +195,7 @@ namespace cbl {
         void write(const void *src, size_t length) {
             CBLError error;
             if (!CBLBlobWriter_Write(_writer, src, length, &error))
-                Base::check(false, error);
+                internal::check(false, error);
         }
 
     private:
@@ -209,13 +213,13 @@ namespace cbl {
         const CBLBlob* blob = CBLDatabase_GetBlob(this->ref(), properties, &error);
         // Per the C API: null with error.code==0 is a legitimate "not found";
         // null with a populated error is a real failure -> throw.
-        Base::check(blob != nullptr || error.code == 0, error);
-        return {(CBLRefCounted*)blob};
+        internal::check(blob != nullptr || error.code == 0, error);
+        return {const_cast<CBLBlob*>(blob), Blob::adopt};
     }
 
     inline void Database::saveBlob(const Blob& blob) {
         CBLError error{};
-        Base::check(CBLDatabase_SaveBlob(this->ref(), blob.ref(), &error), error);
+        internal::check(CBLDatabase_SaveBlob(this->ref(), blob.ref(), &error), error);
     }
 }
 

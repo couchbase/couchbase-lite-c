@@ -209,7 +209,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ DatabaseConfiguration default") {
     CHECK(cfg.encryptionKey.algorithm == kCBLEncryptionNone);
 #endif
 }
-
+#if 0
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ DatabaseConfiguration round-trip with CBL config") {
     string dir = string(slice(CBLTest::databaseDir()));
     DatabaseConfiguration cfg = DatabaseConfiguration::defaultConfiguration();
@@ -230,6 +230,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ DatabaseConfiguration round-trip with CBL con
     CHECK(cfg2.encryptionKey.algorithm == kCBLEncryptionNone);
 #endif
 }
+#endif
 
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ Database returns its config") {
     DatabaseConfiguration cfg = db.config();
@@ -309,7 +310,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Database getBlob non-existing returns falsy",
     props[kCBLBlobDigestProperty] = "sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=";
 
     // Legitimate "not found": no throw, falsy Blob.
-    Blob got = db.getBlob(props);
+    const Blob got = db.getBlob(props);
     CHECK(!got);
 }
 

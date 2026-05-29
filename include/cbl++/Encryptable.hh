@@ -38,47 +38,53 @@ namespace cbl {
         be encrypted by the push replicator and decrypted by the pull replicator. Its
         persistent form is a special dictionary in the document properties; construct an
         Encryptable from such a dictionary via Encryptable::getEncryptableValue. */
-class Encryptable : protected RefCounted {
-public:
+    class Encryptable : protected RefCounted {
+    public:
     /** Creates an Encryptable wrapping an arbitrary Fleece value.
         @param value  The value to be encrypted. */
-    Encryptable(fleece::Value value)    : Encryptable(CBLEncryptable_CreateWithValue(value), adopt){}
+    explicit Encryptable(fleece::Value value) : Encryptable(CBLEncryptable_CreateWithValue(value), adopt){}
 
     /** Creates an Encryptable wrapping a string value.
         @param value  The string to be encrypted. */
-    Encryptable(std::string_view value) : Encryptable(CBLEncryptable_CreateWithString((slice)value), adopt){}
+    explicit Encryptable(std::string_view value) : Encryptable(CBLEncryptable_CreateWithString((slice)value), adopt){}
 
-    /** Creates an Encryptable wrapping a null value. */
+    /** Creates an Encryptable wrapping a null value.
+        @note Use factory method to avoid ambiguity. */
     static Encryptable createWithNull() {
         return {CBLEncryptable_CreateWithNull(), adopt};
     }
 
     /** Creates an Encryptable wrapping a boolean value.
-        @param value  The value to be encrypted. */
+        @param value  The value to be encrypted.
+        @note Use factory method to avoid ambiguity. */
     static Encryptable createWithBool(bool value) {
         return {CBLEncryptable_CreateWithBool(value), adopt};
     }
 
     /** Creates an Encryptable wrapping a signed integer value.
-        @param value  The value to be encrypted. */
+        @param value  The value to be encrypted.
+        @note Use factory method to avoid ambiguity. */
     static Encryptable createWithInt(int64_t value) {
         return {CBLEncryptable_CreateWithInt(value), adopt};
     }
 
     /** Creates an Encryptable wrapping an unsigned integer value.
-        @param value  The value to be encrypted. */
+        @param value  The value to be encrypted.
+        @note Use factory method to avoid ambiguity. */
     static Encryptable createWithUInt(uint64_t value) {
         return {CBLEncryptable_CreateWithUInt(value), adopt};
     }
 
     /** Creates an Encryptable wrapping a float value.
-        @param value  The value to be encrypted. */
+        @param value  The value to be encrypted.
+        @note Use factory method to avoid ambiguity. */
     static Encryptable createWithFloat(float value) {
         return {CBLEncryptable_CreateWithFloat(value), adopt};
     }
 
     /** Creates an Encryptable wrapping a double value.
-        @param value  The value to be encrypted. */
+        @param value  The value to be encrypted.
+        @note Use factory method to avoid ambiguity. */
     static Encryptable createWithDouble(double value) {
         return {CBLEncryptable_CreateWithDouble(value), adopt};
     }
@@ -109,9 +115,7 @@ public:
         struct adopt_t {};
         inline static constexpr adopt_t adopt{};
 
-        void adoptCObj(CBLEncryptable* cObj) { _ref = (CBLRefCounted*)cObj;}
-
-        Encryptable(CBLEncryptable* cObj, adopt_t) {adoptCObj(cObj);}
+        Encryptable(CBLEncryptable* cObj, adopt_t) {_ref = (CBLRefCounted*)cObj;}
     };
 
 }

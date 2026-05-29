@@ -65,15 +65,15 @@ namespace cbl {
         // Accessors:
         
         /** The collection's name. */
-        std::string name() const                        {return Base::asString(CBLCollection_Name(ref()));}
+        std::string name() const                        {return internal::asString(CBLCollection_Name(ref()));}
         
         /** The collection's fully qualified name in the '<scope-name>.<collection-name>' format. */
-        std::string fullName() const                    {return Base::asString(CBLCollection_FullName(ref()));}
+        std::string fullName() const                    {return internal::asString(CBLCollection_FullName(ref()));}
         
         /** The scope's name. */
         std::string scopeName() const {
             auto scope = CBLCollection_Scope(ref());
-            auto scopeName = Base::asString(CBLScope_Name(scope));
+            auto scopeName = internal::asString(CBLScope_Name(scope));
             CBLScope_Release(scope);
             return scopeName;
         }
@@ -154,7 +154,7 @@ namespace cbl {
             CBLError error;
             bool purged = CBLCollection_PurgeDocumentByID(ref(), docID, &error);
             if (!purged && error.code != 0)
-                Base::check(false, error);
+                internal::check(false, error);
             return purged;
         }
         
@@ -167,7 +167,7 @@ namespace cbl {
         time_t getDocumentExpiration(slice docID) const {
             CBLError error;
             time_t exp = CBLCollection_GetDocumentExpiration(ref(), docID, &error);
-            Base::check(exp >= 0, error);
+            internal::check(exp >= 0, error);
             return exp;
         }
 
@@ -177,7 +177,7 @@ namespace cbl {
                               or 0 if the document should never expire. */
         void setDocumentExpiration(slice docID, time_t expiration) {
             CBLError error;
-            Base::check(CBLCollection_SetDocumentExpiration(ref(), docID, expiration, &error), error);
+            internal::check(CBLCollection_SetDocumentExpiration(ref(), docID, expiration, &error), error);
         }
         
         // Indexes:
@@ -190,7 +190,7 @@ namespace cbl {
             @param config  The value index config. */
         void createValueIndex(slice name, CBLValueIndexConfiguration config) {
             CBLError error;
-            Base::check(CBLCollection_CreateValueIndex(ref(), name, config, &error), error);
+            internal::check(CBLCollection_CreateValueIndex(ref(), name, config, &error), error);
         }
         
         /** Creates a full-text index in the collection.
@@ -201,7 +201,7 @@ namespace cbl {
             @param config  The full-text index config. */
         void createFullTextIndex(slice name, CBLFullTextIndexConfiguration config) {
             CBLError error;
-            Base::check(CBLCollection_CreateFullTextIndex(ref(), name, config, &error), error);
+            internal::check(CBLCollection_CreateFullTextIndex(ref(), name, config, &error), error);
         }
         
         /** Creates an array index for use with UNNEST queries in the collection.
@@ -212,7 +212,7 @@ namespace cbl {
             @param config  The array index config. */
         void createArrayIndex(slice name, CBLArrayIndexConfiguration config) {
             CBLError error;
-            Base::check(CBLCollection_CreateArrayIndex(ref(), name, config, &error), error);
+            internal::check(CBLCollection_CreateArrayIndex(ref(), name, config, &error), error);
         }
         
 #ifdef COUCHBASE_ENTERPRISE
@@ -229,14 +229,14 @@ namespace cbl {
         /** Deletes an index given its name from the collection. */
         void deleteIndex(slice name) {
             CBLError error;
-            Base::check(CBLCollection_DeleteIndex(ref(), name, &error), error);
+            internal::check(CBLCollection_DeleteIndex(ref(), name, &error), error);
         }
 
         /** Returns the names of the indexes in the collection, as a Fleece array of strings. */
         fleece::RetainedArray getIndexNames() {
             CBLError error{};
             FLMutableArray flNames = CBLCollection_GetIndexNames(ref(), &error);
-            Base::check(error.code == 0, error);
+            internal::check(error.code == 0, error);
             fleece::RetainedArray names(flNames);
             FLArray_Release(flNames);
             return names;
@@ -277,10 +277,9 @@ namespace cbl {
         }
         
     protected:
-        
+
         static Collection adopt(const CBLCollection* _cbl_nullable d, CBLError *error) {
-            if (!d && error->code != 0)
-                Base::check(false, *error);
+            internal::check(d != nullptr || error->code == 0, *error);
             Collection col;
             col._ref = (CBLRefCounted*)d;
             return col;

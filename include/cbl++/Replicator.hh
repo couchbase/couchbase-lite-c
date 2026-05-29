@@ -45,7 +45,7 @@ namespace cbl {
         static Endpoint urlEndpoint(slice url) {
             CBLError error {};
             auto endpoint = CBLEndpoint_CreateWithURL(url, &error);
-            Base::check(endpoint, error);
+            internal::check(endpoint, error);
             return Endpoint(endpoint);
         }
         
@@ -346,7 +346,7 @@ namespace cbl {
             
             CBLError error {};
             _ref = (CBLRefCounted*) CBLReplicator_Create(&c_config, &error);
-            Base::check(_ref, error);
+            internal::check(_ref, error);
         }
 
         /** Starts a replicator, asynchronously. Does nothing if it's already started.
@@ -383,7 +383,7 @@ namespace cbl {
         /** Returns the ID used to correlate the replication session with the remote endpoint.
             This value is intended for logging and diagnostics, and is an empty string until the
             replicator receives a correlation ID from the remote endpoint. */
-        std::string correlationID() const  {return Base::asString(CBLReplicator_CorrelationID(ref()));}
+        std::string correlationID() const  {return internal::asString(CBLReplicator_CorrelationID(ref()));}
 
         /** Indicates which documents in the given collection have local changes that have not yet been
             pushed to the server by this replicator. This is of course a snapshot, that will go out of date
@@ -396,7 +396,7 @@ namespace cbl {
         fleece::Dict pendingDocumentIDs(Collection& collection) const {
             CBLError error;
             fleece::Dict result = CBLReplicator_PendingDocumentIDs(ref(), collection.ref(), &error);
-            Base::check(result != nullptr, error);
+            internal::check(result != nullptr, error);
             return result;
         }
         
@@ -411,7 +411,7 @@ namespace cbl {
         bool isDocumentPending(fleece::slice docID, Collection& collection) const {
             CBLError error;
             bool pending = CBLReplicator_IsDocumentPending(ref(), docID, collection.ref(), &error);
-            Base::check(pending || error.code == 0, error);
+            internal::check(pending || error.code == 0, error);
             return pending;
         }
         

@@ -97,11 +97,11 @@ namespace cbl {
         int            code;           ///< Error code, specific to the domain. 0 always means no error.
     };
 
-    struct Base {
-        static std::string asString(FLSlice s)          {return slice(s).asString();}
-        static std::string asString(FLSliceResult &&s)  {return alloc_slice(s).asString();}
+    namespace internal {
+        inline std::string asString(FLSlice s)          {return slice(s).asString();}
+        inline std::string asString(FLSliceResult &&s)  {return alloc_slice(s).asString();}
 
-        static void check(bool ok, CBLError &error) {
+        inline void check(bool ok, CBLError &error) {
             if (!ok) {
                 alloc_slice message = CBLError_Message(&error);
 #if DEBUG
@@ -111,7 +111,7 @@ namespace cbl {
                 throw cbl::Error{error.domain, error.code, message.asString()};
             }
         }
-    };
+    }
 
 // Internal use only: Copy/move ctors and assignment ops that have to be declared in subclasses
 #define CBL_REFCOUNTED_WITHOUT_COPY_MOVE_BOILERPLATE(CLASS, SUPER, C_TYPE) \

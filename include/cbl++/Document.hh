@@ -37,11 +37,11 @@ namespace cbl {
         // Metadata:
 
         /** A document's ID */
-        std::string id() const                     {return Base::asString(CBLDocument_ID(ref()));}
+        std::string id() const                     {return internal::asString(CBLDocument_ID(ref()));}
 
         /** A document's revision ID, which is a short opaque string that's guaranteed to be unique to every change made to
             the document. If the document doesn't exist yet, this function returns an empty string.  */
-        std::string revisionID() const             {return Base::asString(CBLDocument_RevisionID(ref()));}
+        std::string revisionID() const             {return internal::asString(CBLDocument_RevisionID(ref()));}
         
         /** The hybrid logical timestamp in nanoseconds since epoch that the revision was created. */
         uint64_t timestamp() const                 {return CBLDocument_Timestamp(ref());}
@@ -82,7 +82,7 @@ namespace cbl {
 
         static Document adopt(const CBLDocument* _cbl_nullable d, CBLError *error) {
             if (!d && error->code != 0)
-                Base::check(false, *error);
+                internal::check(false, *error);
             Document doc;
             doc._ref = (CBLRefCounted*)d;
             return doc;
@@ -92,12 +92,12 @@ namespace cbl {
             if (saveResult)
                 return true;
             else {
-                bool notThrow = (error.code == kCBLErrorConflict && error.domain == kCBLDomain);
-                Base::check(notThrow, error);
+                bool good = (error.code == kCBLErrorConflict && error.domain == kCBLDomain);
+                internal::check(good, error);
                 return false;
             }
         }
-        
+
         CBL_REFCOUNTED_BOILERPLATE(Document, RefCounted, const CBLDocument)
     };
 
@@ -157,12 +157,12 @@ namespace cbl {
             @param json  A JSON Dictionary string. */
         void setPropertiesAsJSON(slice json) {
             CBLError error;
-            Base::check(CBLDocument_SetJSON(ref(), json, &error), error);
+            internal::check(CBLDocument_SetJSON(ref(), json, &error), error);
         }
 
     protected:
         static MutableDocument adopt(CBLDocument* _cbl_nullable d, CBLError *error) {
-            Base::check(d != nullptr || error->code == 0, *error);
+            internal::check(d != nullptr || error->code == 0, *error);
             MutableDocument doc;
             doc._ref = (CBLRefCounted*)d;
             return doc;
@@ -228,7 +228,7 @@ namespace cbl {
 
     inline void Collection::purgeDocument(Document &doc) {
         CBLError error;
-        Base::check(CBLCollection_PurgeDocument(ref(), doc.ref(), &error), error);
+        internal::check(CBLCollection_PurgeDocument(ref(), doc.ref(), &error), error);
     }
 }
 

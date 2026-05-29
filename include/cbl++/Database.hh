@@ -62,7 +62,7 @@ namespace cbl {
             @note Must be called before opening a database that intends to use the vector search extension. */
         static void enableVectorSearch(slice path) {
             CBLError error {};
-            Base::check(CBL_EnableVectorSearch(path, &error), error);
+            internal::check(CBL_EnableVectorSearch(path, &error), error);
         }
     };
 
@@ -106,7 +106,7 @@ namespace cbl {
 
     /** Database configuration options. */
     struct DatabaseConfiguration {
-        std::string_view directory;      ///< The parent directory of the database
+        std::string      directory;      ///< The parent directory of the database
     #ifdef COUCHBASE_ENTERPRISE
         EncryptionKey encryptionKey;     ///< The database's encryption key (if any)
     #endif
@@ -119,27 +119,21 @@ namespace cbl {
             Setting this mode true ensures that an operating system crash or
             power failure will not cause the loss of any data.  FULL synchronous
             is very safe but it is also dramatically slower. */
-        bool fullSync;
+        bool fullSync{false};
 
         DatabaseConfiguration(const CBLDatabaseConfiguration& cblConfig) {
-            directory = (slice)cblConfig.directory;
+            directory = ((slice)cblConfig.directory).asString();
 #ifdef COUCHBASE_ENTERPRISE
             encryptionKey = cblConfig.encryptionKey;
 #endif
             fullSync = cblConfig.fullSync;
         }
 
-        operator CBLDatabaseConfiguration() const {
-            return CBLDatabaseConfiguration{(slice)directory,
-#ifdef COUCHBASE_ENTERPRISE
-                encryptionKey,
-#endif
-                fullSync};
-        }
+        DatabaseConfiguration() = default;
 
         /** Returns a configuration initialized with the default settings (default directory,
             no encryption, full-sync off). */
-        inline static DatabaseConfiguration defaultConfiguration() {
+        static DatabaseConfiguration defaultConfiguration() {
             return CBLDatabaseConfiguration_Default();
         }
     };
@@ -167,7 +161,7 @@ namespace cbl {
                                  slice toName)
         {
             CBLError error;
-            Base::check( CBL_CopyDatabase(fromPath, toName,
+            internal::check( CBL_CopyDatabase(fromPath, toName,
                                           nullptr, &error), error );
         }
 
@@ -181,8 +175,15 @@ namespace cbl {
                                  const DatabaseConfiguration& config)
         {
             CBLError error;
-            CBLDatabaseConfiguration cblConfig = config;
-            Base::check( CBL_CopyDatabase(fromPath, toName,
+            CBLDatabaseConfiguration cblConfig{
+                (slice)config.directory,
+#ifdef COUCHBASE_ENTERPRISE
+                config.encryptionKey,
+#endif
+                config.fullSync
+            };
+
+            internal::check( CBL_CopyDatabase(fromPath, toName,
                                           &cblConfig, &error), error );
         }
 
@@ -197,7 +198,7 @@ namespace cbl {
             if (!CBL_DeleteDatabase(name,
                                     inDirectory,
                                     &error) && error.code != 0)
-                Base::check(false, error);
+                internal::check(false, error);
         }
 
         // Lifecycle:
@@ -218,27 +219,33 @@ namespace cbl {
         Database(slice name,
                  const DatabaseConfiguration& config)
         {
-            CBLDatabaseConfiguration cblConfig = config;
+            CBLDatabaseConfiguration cblConfig{
+                (slice)config.directory,
+#ifdef COUCHBASE_ENTERPRISE
+                config.encryptionKey,
+#endif
+                config.fullSync
+            };
             open(name, &cblConfig);
         }
 
         /** Closes an open database. */
         void close() {
             CBLError error;
-            Base::check(CBLDatabase_Close(ref(), &error), error);
+            internal::check(CBLDatabase_Close(ref(), &error), error);
         }
 
         /** Closes and deletes a database. */
         void deleteDatabase() {
             CBLError error;
-            Base::check(CBLDatabase_Delete(ref(), &error), error);
+            internal::check(CBLDatabase_Delete(ref(), &error), error);
         }
         
         /** Performs database maintenance.
             @param type  The database maintenance type. */
         void performMaintenance(CBLMaintenanceType type) {
             CBLError error;
-            Base::check(CBLDatabase_PerformMaintenance(ref(), type, &error), error);
+            internal::check(CBLDatabase_PerformMaintenance(ref(), type, &error), error);
         }
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -249,17 +256,17 @@ namespace cbl {
             re-encrypted with the new key. */
         void changeEncryptionKey(const EncryptionKey* _cbl_nullable newKey) {
             CBLError error{};
-            Base::check(CBLDatabase_ChangeEncryptionKey(ref(), newKey, &error), error);
+            internal::check(CBLDatabase_ChangeEncryptionKey(ref(), newKey, &error), error);
         }
 #endif
 
         // Accessors:
         
         /** Returns the database's name. */
-        std::string name() const                        {return Base::asString(CBLDatabase_Name(ref()));}
+        std::string name() const                        {return internal::asString(CBLDatabase_Name(ref()));}
         
         /** Returns the database's full filesystem path, or an empty string if the database is closed or deleted. */
-        std::string path() const                        {return Base::asString(CBLDatabase_Path(ref()));}
+        std::string path() const                        {return internal::asString(CBLDatabase_Path(ref()));}
         
         /** Returns the database's configuration, as given when it was opened. */
         DatabaseConfiguration config() const            {return CBLDatabase_Config(ref());}
@@ -301,7 +308,7 @@ namespace cbl {
         fleece::MutableArray getScopeNames() const {
             CBLError error {};
             FLMutableArray flNames = CBLDatabase_ScopeNames(ref(), &error);
-            Base::check(error.code == 0, error);
+            internal::check(error.code == 0, error);
             fleece::MutableArray names(flNames);
             FLMutableArray_Release(flNames);
             return names;
@@ -313,7 +320,7 @@ namespace cbl {
         fleece::MutableArray getCollectionNames(slice scopeName =kCBLDefaultScopeName) const {
             CBLError error {};
             FLMutableArray flNames = CBLDatabase_CollectionNames(ref(), scopeName, &error);
-            Base::check(error.code == 0, error);
+            internal::check(error.code == 0, error);
             fleece::MutableArray names(flNames);
             FLMutableArray_Release(flNames);
             return names;
@@ -345,7 +352,7 @@ namespace cbl {
             @param scopeName  The name of the scope. */
         inline void deleteCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName) {
             CBLError error {};
-            Base::check(CBLDatabase_DeleteCollection(ref(), collectionName, scopeName, &error), error);
+            internal::check(CBLDatabase_DeleteCollection(ref(), collectionName, scopeName, &error), error);
         }
         
         /** Returns the default collection. */
@@ -401,11 +408,11 @@ namespace cbl {
         void open(slice& name, const CBLDatabaseConfiguration* _cbl_nullable config) {
             CBLError error {};
             _ref = (CBLRefCounted*)CBLDatabase_Open(name, config, &error);
-            Base::check(_ref != nullptr, error);
+            internal::check(_ref != nullptr, error);
             
             _notificationReadyCallbackAccess = std::make_shared<NotificationsReadyCallbackAccess>();
         }
-        
+
         class NotificationsReadyCallbackAccess {
         public:
             void setCallback(NotificationsReadyCallback callback) {
@@ -475,7 +482,7 @@ namespace cbl {
 
         explicit Transaction (CBLDatabase *db) {
             CBLError error{};
-            Base::check(CBLDatabase_BeginTransaction(db, &error), error);
+            internal::check(CBLDatabase_BeginTransaction(db, &error), error);
             _db = db;
         }
 
@@ -501,7 +508,7 @@ namespace cbl {
                         CBL_Log(kCBLLogDomainDatabase, kCBLLogWarning,
                                 "Transaction::end failed, while handling an exception");
                     else
-                        Base::check(false, error);
+                        internal::check(false, error);
                 }
             }
         }
