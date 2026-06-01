@@ -86,7 +86,7 @@ namespace cbl {
         // Allows Blob to be assigned to mutable Dict/Array item, e.g. `dict["foo"] = blob`
         operator fleece::Dict() const               {return properties();}
 
-        /** Reads the blob's entire content into memory and returns it.
+        /** Reads the blob's content into memory and returns it.
             @note  This loads the whole blob at once. For large blobs, prefer
                    \ref openContentStream to read the content incrementally.
             @return  The blob's content as an \ref alloc_slice that owns the loaded bytes.

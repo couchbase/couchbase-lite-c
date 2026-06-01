@@ -24,8 +24,6 @@
 #pragma once
 #include "cbl++/Base.hh"
 #include "cbl/CBLPrediction.h"
-#include <memory>
-#include <unordered_map>
 
 // VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
 // future releases.
@@ -41,50 +39,35 @@ namespace cbl {
         @note The predictive index feature is not supported by Couchbase Lite for C.
               The Predictive Model is currently for creating vector indexes using the PREDICTION() function,
               which will call the specified predictive model for computing the vectors. */
-    class PredictiveModel {
-    public:
-        /** Predicts and returns a mutable dictionary based on the input dictionary.
-            Override this function  for the implementation.
-            @param input The input dictionary corresponding to the input dictionary expression given in the query's PREDICTION() function
-            @return The output dictionary.
-                    - To create a new dictionary for returning, use fleece::MutableDict::newDict().
-                    - To create a null result to evaluate as MISSING, use fleece::MutableDict(). */
-        virtual fleece::MutableDict prediction(fleece::Dict input) noexcept = 0;
-        
-        virtual ~PredictiveModel() = default;
-    };
 
-    /** Predictive Model Registation 
-        This class provides static methods to register and unregister predictive models. */
+    /** A predictive model callable, invoked by queries via the PREDICTION() function.
+        Given an input dictionary, return the output dictionary. */
+    using PredictiveModel = std::function<fleece::MutableDict(fleece::Dict)>;
+
+    /** Registers/unregisters predictive models by name. */
     class Prediction {
     public:
         /** Registers a predictive model with the given name.
             @param name  The name used to refer to the model in a query's PREDICTION() function.
-            @param model  The model implementation; ownership is transferred to the registry until
-                          it is unregistered. */
-        static void registerModel(slice name, std::unique_ptr<PredictiveModel> model) {
-            auto prediction = [](void* context, FLDict input) {
-                auto m = (PredictiveModel*)context;
-                return FLMutableDict_Retain((FLMutableDict) m->prediction(input));
+            @param model  The model implementation. Any matching callable is accepted (lambda, functor, ...). */
+        static void registerModel(slice name, PredictiveModel model) {
+            auto* holder = new PredictiveModel(std::move(model));
+            CBLPredictiveModel config{};
+            config.context      = holder;
+            config.prediction   = [](void* ctx, FLDict input) -> FLMutableDict {
+                auto& fn = *static_cast<PredictiveModel*>(ctx);
+                return FLMutableDict_Retain((FLMutableDict)fn(fleece::Dict(input)));
             };
-
-            CBLPredictiveModel config { };
-            config.context = model.get();
-            config.prediction = prediction;
+            config.unregistered = [](void* ctx) {
+                delete static_cast<PredictiveModel*>(ctx);
+            };
             CBL_RegisterPredictiveModel(name, config);
-
-            _sPredictiveModels[name] = std::move(model);
         }
-        
-        /** Unregisters the predictive model with the given name.
-            @param name  The name the model was registered under. */
+
+        /** Unregisters the model; LiteCore fires `unregistered` which frees the model. */
         static void unregisterModel(slice name) {
             CBL_UnregisterPredictiveModel(name);
-            _sPredictiveModels.erase(name);
         }
-
-    private:
-        inline static std::unordered_map<slice, std::unique_ptr<PredictiveModel>> _sPredictiveModels;
     };
 }
 

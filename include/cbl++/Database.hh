@@ -162,7 +162,7 @@ namespace cbl {
         {
             CBLError error;
             internal::check( CBL_CopyDatabase(fromPath, toName,
-                                          nullptr, &error), error );
+                                              nullptr, &error), error );
         }
 
         /** Copies a database file to a new location, and assigns it a new internal UUID to distinguish
@@ -182,9 +182,8 @@ namespace cbl {
 #endif
                 config.fullSync
             };
-
             internal::check( CBL_CopyDatabase(fromPath, toName,
-                                          &cblConfig, &error), error );
+                                              &cblConfig, &error), error );
         }
 
         /** Deletes a database file. If the database file is open, an error will be thrown.
@@ -317,7 +316,7 @@ namespace cbl {
         /** Returns the names of all collections in the scope.
             @param scopeName  The name of the scope.
             @return The names of all collections in the scope, or throws if an error occurred. */
-        fleece::MutableArray getCollectionNames(slice scopeName = kCBLDefaultScopeName) const {
+        fleece::MutableArray getCollectionNames(slice scopeName =kCBLDefaultScopeName) const {
             CBLError error {};
             FLMutableArray flNames = CBLDatabase_CollectionNames(ref(), scopeName, &error);
             internal::check(error.code == 0, error);
@@ -332,7 +331,7 @@ namespace cbl {
             @return The \ref Collection, or a falsy Collection if it doesn't exist.
             @throws cbl::Error  On a database error. Note a non-existent collection is not an
                     error — that returns a falsy Collection rather than throwing. */
-        inline Collection getCollection(slice collectionName, slice scopeName = kCBLDefaultScopeName) const;
+        inline Collection getCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName) const;
         
         /** Create a new collection.
             The naming rules of the collections and scopes are as follows:
@@ -344,13 +343,13 @@ namespace cbl {
             @param collectionName  The name of the collection.
             @param scopeName  The name of the scope.
             @return A \ref Collection instance. */
-        inline Collection createCollection(slice collectionName, slice scopeName = kCBLDefaultScopeName);
+        inline Collection createCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName);
         
         /** Delete an existing collection.
             @note The default collection cannot be deleted.
             @param collectionName  The name of the collection.
             @param scopeName  The name of the scope. */
-        inline void deleteCollection(slice collectionName, slice scopeName = kCBLDefaultScopeName) {
+        inline void deleteCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName) {
             CBLError error {};
             internal::check(CBLDatabase_DeleteCollection(ref(), collectionName, scopeName, &error), error);
         }

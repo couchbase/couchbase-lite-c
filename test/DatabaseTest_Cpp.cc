@@ -19,6 +19,7 @@
 #include "CBLTest_Cpp.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Mutable.hh"
+#include <cstring>
 #include <string>
 #include <thread>
 
@@ -209,28 +210,31 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ DatabaseConfiguration default") {
     CHECK(cfg.encryptionKey.algorithm == kCBLEncryptionNone);
 #endif
 }
-#if 0
+
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ DatabaseConfiguration round-trip with CBL config") {
     string dir = string(slice(CBLTest::databaseDir()));
     DatabaseConfiguration cfg = DatabaseConfiguration::defaultConfiguration();
     cfg.directory = dir;
     cfg.fullSync = true;
 
-    CBLDatabaseConfiguration ccfg = cfg;
-    CHECK(slice(ccfg.directory) == slice(dir));
-    CHECK(ccfg.fullSync == true);
+    CBLDatabaseConfiguration ccfg{
+        slice(cfg.directory),
 #ifdef COUCHBASE_ENTERPRISE
-    CHECK(ccfg.encryptionKey.algorithm == kCBLEncryptionNone);
+        cfg.encryptionKey,
 #endif
+        cfg.fullSync
+    };
 
     DatabaseConfiguration cfg2 = ccfg;
-    CHECK(slice(cfg2.directory) == slice(dir));
-    CHECK(cfg2.fullSync == true);
+    CHECK(cfg2.directory == cfg.directory);
+    CHECK(cfg2.fullSync == cfg.fullSync);
 #ifdef COUCHBASE_ENTERPRISE
-    CHECK(cfg2.encryptionKey.algorithm == kCBLEncryptionNone);
+    CHECK([](EncryptionKey& key1, EncryptionKey& key2) -> bool {
+        return key1.algorithm == key2.algorithm &&
+        std::memcmp(key1.bytes, key2.bytes, sizeof(key1.bytes)) == 0;
+    }(cfg2.encryptionKey, cfg.encryptionKey));
 #endif
 }
-#endif
 
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ Database returns its config") {
     DatabaseConfiguration cfg = db.config();

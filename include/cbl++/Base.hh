@@ -93,7 +93,7 @@ namespace cbl {
         , domain(domain)
         , code(code)
         {}
-        CBLErrorDomain domain;         ///< Domain of errors; a namespace for the `code`.
+        CBLErrorDomain domain;         ///< Domain of errors.
         int            code;           ///< Error code, specific to the domain. 0 always means no error.
     };
 

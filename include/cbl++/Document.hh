@@ -92,8 +92,8 @@ namespace cbl {
             if (saveResult)
                 return true;
             else {
-                bool good = (error.code == kCBLErrorConflict && error.domain == kCBLDomain);
-                internal::check(good, error);
+                bool permittedError = (error.code == kCBLErrorConflict && error.domain == kCBLDomain);
+                internal::check(permittedError, error); // throw if not permittedError
                 return false;
             }
         }
