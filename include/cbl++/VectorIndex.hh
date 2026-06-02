@@ -55,6 +55,8 @@ namespace cbl {
             return VectorEncoding(CBLVectorEncoding_CreateProductQuantizer(subquantizers, bits));
         }
         
+        /** Deleted: a VectorEncoding must be constructed via one of the named factories
+            (\ref none, \ref scalarQuantizer, \ref productQuantizer). */
         VectorEncoding() = delete;
         
     protected:

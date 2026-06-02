@@ -24,25 +24,15 @@
 
     \section error_handling Error handling
 
-    On failure, functions in this API report errors by throwing exceptions derived from
-    `std::exception`, so callers should be prepared to catch `std::exception`.
+    Functions in the Couchbase Lite C++ API report Couchbase Lite-specific failures by
+    throwing \ref cbl::Error, a subclass of `std::runtime_error` that provides the error
+    domain, error code, and a human-readable message from `what()`.
 
-    Couchbase Lite-specific failures are thrown as \ref cbl::Error, a subclass of
-    `std::runtime_error` that encapsulates the failure's `domain`, `code`, and message.
-    Catch `cbl::Error` when you need that structured information; catch `std::exception`
-    for general handling.
-    (The raw C-API `CBLError` status struct is wrapped by `cbl::Error` and is never
-    thrown directly across this API.)
+    Catch \ref cbl::Error when you need Couchbase Lite-specific error details. Catch
+    `std::exception` for general error handling.
 
-    `noexcept` is applied only to special member functions (copy/move constructors and
-    assignment operators, and destructors), where the no-throw guarantee is structural and
-    permanent. It is deliberately omitted from other methods — even ones that cannot throw
-    today — so that their implementations remain free to throw in a future release without
-    a breaking API change. Do not infer anything from the absence of `noexcept`; assume any
-    method may throw `cbl::Error` (or another `std::exception`) on failure. Individual
-    functions add an `@throws cbl::Error` note only when the specific trigger, or a
-    non-throwing outcome worth contrasting (such as a lookup that returns an empty result
-    instead of throwing when an item doesn't exist), is not obvious from the signature.
+    `noexcept` marks functions that are guaranteed not to throw. All other functions
+    should be treated as potentially throwing on failure, unless otherwise documented.
 
     @} */
 

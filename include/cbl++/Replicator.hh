@@ -494,6 +494,8 @@ namespace cbl {
             return *this;
         }
         
+        /** Releases the underlying C \ref CBLReplicator and drops the C++ collection-configuration
+            map. After this call the object is empty (\ref operator bool returns false). */
         void clear() {
             RefCounted::clear();
             _collectionMap.reset();

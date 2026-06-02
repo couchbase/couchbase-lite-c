@@ -174,15 +174,21 @@ namespace cbl {
         CBL_REFCOUNTED_BOILERPLATE(ResultSet, RefCounted, CBLResultSet)
     };
 
-    // Implementation of ResultSet::iterator
+    /** Forward iterator over a \ref ResultSet, yielding each \ref Result in turn.
+        Obtained via \ref ResultSet::begin and \ref ResultSet::end. */
     class ResultSetIterator {
     public:
+        /** Returns the current \ref Result. */
         const Result& operator*()  const {return _result;}
+        /** Allows access to the current \ref Result via `->`. */
         const Result& operator->() const {return _result;}
 
+        /** Returns true if both iterators reference the same underlying result set position. */
         bool operator== (const ResultSetIterator &i) const {return _rs == i._rs;}
+        /** Returns true if the iterators differ. */
         bool operator!= (const ResultSetIterator &i) const {return _rs != i._rs;}
 
+        /** Advances to the next result, or to end-of-results if there are no more. */
         ResultSetIterator& operator++() {
             if (!CBLResultSet_Next(_rs.ref()))
                 _rs = ResultSet{};
@@ -226,8 +232,12 @@ namespace cbl {
         \ref ListenerToken::remove() is called. */
     class Query::ChangeListener : public ListenerToken<Change> {
     public:
+        /** Creates an empty, uninitialized change listener token. */
         ChangeListener(): ListenerToken<Change>() { }
 
+        /** Creates a change listener token bound to a specific query and callback.
+            @param query  The query whose changes are being listened to.
+            @param cb     The callback that will receive change notifications. */
         ChangeListener(Query query, Callback cb)
         :ListenerToken<Change>(cb)
         ,_query(std::move(query))
@@ -257,6 +267,7 @@ namespace cbl {
     /** The change passed to a live query's listener callback, giving access to the updated results. */
     class Query::Change {
     public:
+        /** Copy constructor. */
         Change(const Change& src) : _query(src._query), _token(src._token) {}
 
         /** Returns the query's results as of this change. */

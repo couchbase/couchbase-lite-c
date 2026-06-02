@@ -67,6 +67,7 @@ namespace cbl {
         :RefCounted((CBLRefCounted*) FLDict_GetBlob(d))
         { }
 
+        /** Compares whether this blob and another are equal based on their content. */
         bool blobEquals(const Blob& other) const    {return CBLBlob_Equals(ref(), other.ref());}
 
         /** Returns the length in bytes of a blob's content (from its `length` property). */
@@ -85,7 +86,8 @@ namespace cbl {
         /** Returns the JSON representation of the blob's metadata dictionary. */
         std::string createJSON() const              {return alloc_slice(CBLBlob_CreateJSON(ref())).asString();}
 
-        // Allows Blob to be assigned to mutable Dict/Array item, e.g. `dict["foo"] = blob`
+        /** Implicit conversion to the blob's underlying Fleece dictionary.
+            This lets a Blob be assigned to a mutable Dict/Array item, e.g. `dict["foo"] = blob`. */
         operator fleece::Dict() const               {return properties();}
 
         /** Reads the blob's content into memory and returns it.
@@ -122,6 +124,7 @@ namespace cbl {
     /** A stream for writing a new blob to the database. */
     class BlobReadStream {
     public:
+        /** Alias for the C \ref CBLSeekBase enum describing the reference point used by \ref seek. */
         using SeekBase = CBLSeekBase;
 
         /** Opens a stream for reading a blob's content.
@@ -132,6 +135,7 @@ namespace cbl {
             internal::check(_stream, error);
         }
 
+        /** Closes the underlying read stream. */
         ~BlobReadStream() {
             CBLBlobReader_Close(_stream);
         }
@@ -181,6 +185,8 @@ namespace cbl {
             internal::check(_writer, error);
         }
 
+        /** Closes the blob-writing stream if it has not been handed off to a \ref Blob
+            constructor. Safe to call after the stream has been consumed by a Blob. */
         ~BlobWriteStream() {
             CBLBlobWriter_Close(_writer);
         }

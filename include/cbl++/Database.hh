@@ -66,7 +66,9 @@ namespace cbl {
         }
     };
 
+    /** Alias for the C \ref CBLEncryptionAlgorithm enum identifying an encryption algorithm. */
     using EncryptionAlgorithm = CBLEncryptionAlgorithm;
+    /** Alias for the C \ref CBLEncryptionKeySize enum giving the required key size for an algorithm. */
     using EncryptionKeySize   = CBLEncryptionKeySize;
 
     /** ENTERPRISE EDITION ONLY
@@ -121,6 +123,9 @@ namespace cbl {
             is very safe but it is also dramatically slower. */
         bool fullSync{false};
 
+        /** Constructs a configuration from a C \ref CBLDatabaseConfiguration, copying the
+            directory and (in EE) encryption key out of it.
+            @param cblConfig  The C configuration to copy from. */
         DatabaseConfiguration(const CBLDatabaseConfiguration& cblConfig) {
             directory = ((slice)cblConfig.directory).asString();
 #ifdef COUCHBASE_ENTERPRISE
@@ -129,6 +134,7 @@ namespace cbl {
             fullSync = cblConfig.fullSync;
         }
 
+        /** Default constructor: empty directory, no encryption, full-sync off. */
         DatabaseConfiguration() = default;
 
         /** Returns a configuration initialized with the default settings (default directory,
@@ -392,7 +398,9 @@ namespace cbl {
         }
         
         // Destructors:
-        
+
+        /** Releases the underlying database handle. The database remains open if other
+            \ref Database references to it exist. */
         ~Database() {
             clear();
         }
@@ -458,6 +466,9 @@ namespace cbl {
             return *this;
         }
         
+        /** Releases the underlying C \ref CBLDatabase handle and drops the buffered-notification
+            callback. After this call the object is empty (\ref operator bool returns false).
+            @note Other \ref Database references to the same database file remain valid. */
         void clear() {
             // Reset _notificationReadyCallbackAccess the releasing the _ref to
             // ensure that CBLDatabase is deleted before _notificationReadyCallbackAccess.
@@ -479,6 +490,9 @@ namespace cbl {
         :Transaction(db.ref())
         { }
 
+        /** Begins a batch operation on the given C database handle. Provided for callers
+            that hold a raw \ref CBLDatabase pointer rather than a C++ \ref Database wrapper.
+            @param db  The database to begin a transaction on. */
         explicit Transaction (CBLDatabase *db) {
             CBLError error{};
             internal::check(CBLDatabase_BeginTransaction(db, &error), error);
@@ -491,6 +505,7 @@ namespace cbl {
         /** Ends the transaction, rolling back changes. */
         void abort()    {end(false);}
 
+        /** Ends the transaction, rolling back any changes that have not been committed. */
         ~Transaction()  {end(false);}
 
     private:
