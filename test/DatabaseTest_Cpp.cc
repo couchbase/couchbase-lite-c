@@ -252,7 +252,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Database returns its config") {
 
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ Database saveBlob and getBlob round-trip", "[Blob]") {
     slice content = "I'm Blob.";
-    Blob blob("text/plain", content);
+    Blob blob(content, "text/plain");
     REQUIRE(succeeds([&]{ db.saveBlob(blob); }));
 
     Blob fetched = db.getBlob(blob.properties());
@@ -266,7 +266,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Database saveBlob and getBlob round-trip", "[
 
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ Database saveBlob then read via document", "[Blob]") {
     slice content = "I'm Blob.";
-    Blob blob("text/plain", content);
+    Blob blob(content, "text/plain");
     REQUIRE(succeeds([&]{ db.saveBlob(blob); }));
 
     MutableDocument doc("doc1");

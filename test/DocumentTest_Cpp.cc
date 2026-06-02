@@ -497,7 +497,7 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Document Expiration", "[Document][Expiry
 #pragma mark - Blobs:
 
 TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Blob with Collection", "[Document][Blob]") {
-    Blob blob = Blob("text/plain", "I'm Blob.");
+    Blob blob = Blob("I'm Blob.", "text/plain");
     CHECK(blob.digest() == "sha1-FKiFNQZgW201amCeRJLKJOChjAo=");
     CHECK(blob.contentType() == "text/plain");
     CHECK(blob.length() == 9);

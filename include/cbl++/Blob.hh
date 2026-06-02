@@ -46,28 +46,18 @@ namespace cbl {
         /** Creates a new blob, given its contents as a single block of data.
             @note  The memory pointed to by `contents` is no longer needed after this call completes
                     (it will have been written to the database.)
-            @param contents  The data's address and length. */
-        Blob(slice contents) {
-            _ref = (CBLRefCounted*) CBLBlob_CreateWithData(fleece::nullslice, contents);
-        }
-        Blob(std::nullptr_t, slice contents) = delete;
-        /** Creates a new blob, given its contents as a single block of data.
-            @note  The memory pointed to by `contents` is no longer needed after this call completes
-                    (it will have been written to the database.)
-            @param contentType  The MIME type.
-            @param contents  The data's address and length. */
-        Blob(std::string_view contentType, slice contents) {
-            _ref = (CBLRefCounted*) CBLBlob_CreateWithData(slice(contentType), contents);
+            @param contents  The data's address and length.
+            @param contentType  The MIME type (optional). */
+        Blob(slice contents, std::optional<std::string_view> contentType =std::nullopt) {
+            slice ctype;
+            if ( contentType ) ctype = slice(*contentType);
+            _ref = (CBLRefCounted*) CBLBlob_CreateWithData(ctype, contents);
         }
 
         /** Creates a new blob from the data written to a \ref CBLBlobWriteStream.
-            @param writer  The blob-writing stream the data was written to. */
-        Blob(BlobWriteStream& writer);
-        Blob(std::nullptr_t, BlobWriteStream& writer) = delete;
-        /** Creates a new blob from the data written to a \ref CBLBlobWriteStream.
-            @param contentType  The MIME type.
-            @param writer  The blob-writing stream the data was written to. */
-        Blob(std::string_view contentType, BlobWriteStream& writer);
+            @param writer  The blob-writing stream the data was written to.
+            @param contentType  The MIME type (optional). */
+        inline Blob(BlobWriteStream& writer, std::optional<std::string_view> contentType =std::nullopt);
 
         /** Creates a Blob instance on an existing blob reference in a document or query result.
             @note If the dict argument is not actually a blob reference, this Blob object will be
@@ -215,12 +205,10 @@ namespace cbl {
         CBLBlobWriteStream* _cbl_nullable _writer {nullptr};
     };
 
-    inline Blob::Blob(BlobWriteStream& writer) {
-        _ref = (CBLRefCounted*) CBLBlob_CreateWithStream(fleece::nullslice, writer._writer);
-        writer._writer = nullptr;
-    }
-    inline Blob::Blob(std::string_view contentType, BlobWriteStream& writer) {
-        _ref = (CBLRefCounted*) CBLBlob_CreateWithStream(slice(contentType), writer._writer);
+    inline Blob::Blob(BlobWriteStream& writer, std::optional<std::string_view> contentType) {
+        slice ctype;
+        if ( contentType ) ctype = slice(*contentType);
+        _ref = (CBLRefCounted*) CBLBlob_CreateWithStream(ctype, writer._writer);
         writer._writer = nullptr;
     }
 

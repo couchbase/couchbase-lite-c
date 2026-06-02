@@ -49,13 +49,13 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob", "[Blob]") {
 
         Blob blob;
         SECTION("Create with data") {
-            blob = Blob(kBlobContentType, kBlobContents);
+            blob = Blob(kBlobContents, kBlobContentType);
         }
         SECTION("Create with stream") {
             BlobWriteStream writer(db);
             writer.write("This is the content "_sl);
             writer.write("of the blob."_sl);
-            blob = Blob(kBlobContentType, writer);
+            blob = Blob(writer, kBlobContentType);
         }
         CHECK(blob.digest() == kBlobDigest);
         CHECK(blob.contentType() == kBlobContentType);
@@ -131,7 +131,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob in mutable doc", "[Blob]") {
     {
         MutableDocument doc("blobbo");
         Blob blob;
-        blob = Blob(kBlobContentType, kBlobContents);
+        blob = Blob(kBlobContents, kBlobContentType);
         Dict props = blob.properties();
         doc["picture"] = props;
         defaultCollection.saveDocument(doc);
@@ -152,11 +152,11 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blobs in arrays/dicts", "[Blob]") {
         MutableDocument doc("blobbo");
         MutableArray array = MutableArray::newArray();
         array.insertNulls(0, 1);
-        Blob blob1(kBlobContentType, kBlobContents);
+        Blob blob1(kBlobContents, kBlobContentType);
         array[0] = blob1;
 
         MutableDict dict = MutableDict::newDict();
-        dict["b"] = Blob(kBlobContentType, kBlobContents);
+        dict["b"] = Blob(kBlobContents,kBlobContentType);
 
         doc["array"] = array;
         doc["dict"] = dict;
@@ -177,7 +177,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blobs in ResultSet", "[Blob]") {
         char docID[kDocIDBufferSize];
         snprintf(docID, kDocIDBufferSize, "doc-%d", i);
         MutableDocument doc(docID);
-        Blob blob(kBlobContentType, kBlobContents);
+        Blob blob(kBlobContents, kBlobContentType);
         doc["picture"] = blob.properties();
         defaultCollection.saveDocument(doc);
     }
@@ -201,14 +201,14 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob blobEquals", "[Blob]") {
     slice content1 = "This is the content of the blob 1.";
     slice content2 = "This is the content of the blob 2.";
 
-    Blob blob1(kBlobContentType, content1);
-    Blob blob2(kBlobContentType, content1);
+    Blob blob1(content1, kBlobContentType);
+    Blob blob2(content1, kBlobContentType);
 
     BlobWriteStream writer(db);
     writer.write(content1);
-    Blob blob3(kBlobContentType, writer);
+    Blob blob3(writer, kBlobContentType);
 
-    Blob blob4(kBlobContentType, content2);
+    Blob blob4(content2, kBlobContentType);
 
     CHECK(blob1.digest() == blob2.digest());
     CHECK(blob1.blobEquals(blob2));
@@ -220,7 +220,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob blobEquals", "[Blob]") {
 
 
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob createJSON", "[Blob]") {
-    Blob blob(kBlobContentType, kBlobContents);
+    Blob blob(kBlobContents, kBlobContentType);
     string json = blob.createJSON();
     string expected = string("{\"@type\":\"blob\",\"content_type\":\"") + kBlobContentType
                     + "\",\"digest\":\"" + kBlobDigest
@@ -231,7 +231,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob createJSON", "[Blob]") {
 
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob read stream position", "[Blob]") {
     slice content = "This is the content of the blob 1.";
-    Blob blob(kBlobContentType, content);
+    Blob blob(content, kBlobContentType);
     db.saveBlob(blob);
 
     unique_ptr<BlobReadStream> in(blob.openContentStream());
@@ -251,7 +251,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob read stream position", "[Blob]") {
 
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob read stream seek", "[Blob]") {
     slice content = "This is the content of the blob 1.";
-    Blob blob(kBlobContentType, content);
+    Blob blob(content, kBlobContentType);
     db.saveBlob(blob);
 
     unique_ptr<BlobReadStream> in(blob.openContentStream());
@@ -280,7 +280,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob read stream seek", "[Blob]") {
 
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ Blob read stream seek to negative position throws", "[Blob][!throws]") {
     slice content = "This is the content of the blob 1.";
-    Blob blob(kBlobContentType, content);
+    Blob blob(content, kBlobContentType);
     db.saveBlob(blob);
 
     unique_ptr<BlobReadStream> in(blob.openContentStream());

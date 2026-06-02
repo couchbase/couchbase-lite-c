@@ -144,17 +144,13 @@ namespace cbl {
         // Static database-file operations:
 
         /** Returns true if a database with the given name exists in the given directory.
-            @param name  The database name (without the ".cblite2" extension.) It must be an absolute
-                        or relative path to the database. */
-        static bool exists(std::string_view name) {
-            return CBL_DatabaseExists(slice(name), fleece::nullslice);
-        }
-        static bool exists(std::string_view name, std::nullptr_t) = delete;
-        /** Returns true if a database with the given name exists in the given directory.
             @param name  The database name (without the ".cblite2" extension.)
-            @param inDirectory  The directory containing the database. */
-        static bool exists(std::string_view name, std::string_view inDirectory) {
-            return CBL_DatabaseExists(slice(name), slice(inDirectory));
+            @param inDirectory  The directory containing the database. If not provided, `name` must be an
+                absolute or relative path to the database. */
+        static bool exists(std::string_view name, std::optional<std::string_view> inDirectory=std::nullopt) {
+            slice inDir;
+            if ( inDirectory ) inDir = slice(*inDirectory);
+            return CBL_DatabaseExists(slice(name), inDir);
         }
 
         /** Copies a database file to a new location, and assigns it a new internal UUID to distinguish
@@ -191,20 +187,14 @@ namespace cbl {
         }
 
         /** Deletes a database file. If the database file is open, an error will be thrown.
-            @param name  The database name (without the ".cblite2" extension.) It must be an
-                        absolute or relative path to the database. */
-        static void deleteDatabase(std::string_view name) {
-            CBLError error;
-            if (!CBL_DeleteDatabase(slice(name), fleece::nullslice, &error) && error.code != 0)
-                internal::check(false, error);
-        }
-        static void deleteDatabase(std::string_view name, std::nullptr_t) = delete;
-        /** Deletes a database file. If the database file is open, an error will be thrown.
             @param name  The database name (without the ".cblite2" extension.)
-            @param inDirectory  The directory containing the database. */
-        static void deleteDatabase(std::string_view name, std::string_view inDirectory) {
+            @param inDirectory  The directory containing the database(optional), If not provided, `name` must be an
+                absolute or relative path to the database. */
+        static void deleteDatabase(std::string_view name, std::optional<std::string_view> inDirectory =std::nullopt) {
             CBLError error;
-            if (!CBL_DeleteDatabase(slice(name), slice(inDirectory), &error) && error.code != 0)
+            slice inDir;
+            if ( inDirectory ) inDir = slice(*inDirectory);
+            if (!CBL_DeleteDatabase(slice(name), inDir, &error) && error.code != 0)
                 internal::check(false, error);
         }
 
@@ -357,9 +347,11 @@ namespace cbl {
             @note The default collection cannot be deleted.
             @param collectionName  The name of the collection.
             @param scopeName  The name of the scope. */
-        inline void deleteCollection(std::string_view collectionName, std::string_view scopeName = (std::string_view)slice(kCBLDefaultScopeName)) {
+        inline void deleteCollection(std::string_view collectionName, std::optional<std::string_view> scopeName =slice(kCBLDefaultScopeName)) {
             CBLError error {};
-            internal::check(CBLDatabase_DeleteCollection(ref(), slice(collectionName), slice(scopeName), &error), error);
+            slice sname;
+            if ( scopeName ) sname = *scopeName;
+            internal::check(CBLDatabase_DeleteCollection(ref(), slice(collectionName), sname, &error), error);
         }
         
         /** Returns the default collection. */

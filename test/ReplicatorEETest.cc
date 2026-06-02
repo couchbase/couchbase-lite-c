@@ -367,7 +367,7 @@ public:
             defaultCollection.deleteDocument(doc);
         } else {
             doc["expletive"] = "Shazbatt!";
-            auto blob = Blob("text/plain"_sl, "Blob!"_sl);
+            auto blob = Blob("Blob!"_sl, "text/plain"_sl);
             doc["signature"] = blob.properties();
             defaultCollection.saveDocument(doc);
             expectedLocalRevID = doc.revisionID();
@@ -380,7 +380,7 @@ public:
             otherDBDefaultCol.deleteDocument(doc);
         } else {
             doc["expletive"] = "Frak!";
-            auto blob = Blob("text/plain"_sl, "Pop!"_sl);
+            auto blob = Blob("Pop!"_sl, "text/plain"_sl);
             doc["signature"] = blob.properties();
             otherDBDefaultCol.saveDocument(doc);
             expectedRemoteRevID = CBLDocument_CanonicalRevisionID(doc.ref());

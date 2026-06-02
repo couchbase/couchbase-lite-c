@@ -82,15 +82,13 @@ namespace cbl {
         }
 
         /** Creates a sesssion authenticator using a Couchbase Sync Gateway login session identifier,
-            and optionally a cookie name (pass NULL for the default.) */
-        static Authenticator sessionAuthenticator(std::string_view sessionId) {
-            return Authenticator(CBLAuth_CreateSession(slice(sessionId), fleece::nullslice));
+            and optionally a cookie name. */
+        static Authenticator sessionAuthenticator(std::string_view sessionId, std::optional<std::string_view> cookieName =std::nullopt) {
+            slice cname;
+            if ( cookieName ) cname = slice(*cookieName);
+            return Authenticator(CBLAuth_CreateSession(slice(sessionId), cname));
         }
-        static Authenticator sessionAuthenticator(std::string_view sessionId, std::nullptr_t) = delete;
-        static Authenticator sessionAuthenticator(std::string_view sessionId, std::string_view cookieName) {
-            return Authenticator(CBLAuth_CreateSession(slice(sessionId), slice(cookieName)));
-        }
-        
+
     protected:
         friend class ReplicatorConfiguration;
         
