@@ -24,6 +24,7 @@
 #pragma once
 #include "cbl++/Base.hh"
 #include "cbl/CBLPrediction.h"
+#include <string_view>
 
 // VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
 // future releases.
@@ -50,7 +51,7 @@ namespace cbl {
         /** Registers a predictive model with the given name.
             @param name  The name used to refer to the model in a query's PREDICTION() function.
             @param model  The model implementation. Any matching callable is accepted (lambda, functor, ...). */
-        static void registerModel(slice name, PredictiveModel model) {
+        static void registerModel(std::string_view name, PredictiveModel model) {
             auto* holder = new PredictiveModel(std::move(model));
             CBLPredictiveModel config{};
             config.context      = holder;
@@ -61,12 +62,12 @@ namespace cbl {
             config.unregistered = [](void* ctx) {
                 delete static_cast<PredictiveModel*>(ctx);
             };
-            CBL_RegisterPredictiveModel(name, config);
+            CBL_RegisterPredictiveModel(slice(name), config);
         }
 
         /** Unregisters the model; LiteCore fires `unregistered` which frees the model. */
-        static void unregisterModel(slice name) {
-            CBL_UnregisterPredictiveModel(name);
+        static void unregisterModel(std::string_view name) {
+            CBL_UnregisterPredictiveModel(slice(name));
         }
     };
 }

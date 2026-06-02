@@ -21,6 +21,7 @@
 #include "cbl/CBLQuery.h"
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
@@ -48,9 +49,9 @@ namespace cbl {
             @param language  The query language
             @param queryString  The query string.
          */
-        Query(const Database& db, CBLQueryLanguage language, slice queryString) {
+        Query(const Database& db, CBLQueryLanguage language, std::string_view queryString) {
             CBLError error;
-            auto q = CBLDatabase_CreateQuery(db.ref(), language, queryString, nullptr, &error);
+            auto q = CBLDatabase_CreateQuery(db.ref(), language, slice(queryString), nullptr, &error);
             internal::check(q, error);
             _ref = (CBLRefCounted*)q;
         }
@@ -135,15 +136,15 @@ namespace cbl {
             This may return a NULL Value, indicating `MISSING`, if the value doesn't exist, e.g. if
             the column is a property that doesn't exist in the document. (Or, of course, if the key
             is not a column name in this query.) */
-        fleece::Value valueForKey(slice key) const {
-            return CBLResultSet_ValueForKey(_ref, key);
+        fleece::Value valueForKey(std::string_view key) const {
+            return CBLResultSet_ValueForKey(_ref, slice(key));
         }
 
         /** A subscript operator that returns value of a column of the current result, given its (zero-based) numeric index.  */
         fleece::Value operator[](int i) const                           {return valueAtIndex(i);}
         
         /** A subscript operator that returns the value of a column of the current result, given its column name.  */
-        fleece::Value operator[](slice key) const                       {return valueForKey(key);}
+        fleece::Value operator[](std::string_view key) const            {return valueForKey(key);}
 
     protected:
         explicit Result(CBLResultSet* _cbl_nullable ref)                :_ref(ref) { }
@@ -299,7 +300,7 @@ namespace cbl {
 
     // Query
     
-    Query Database::createQuery(CBLQueryLanguage language, slice queryString) {
+    Query Database::createQuery(CBLQueryLanguage language, std::string_view queryString) {
         return Query(*this, language, queryString);
     }
 }

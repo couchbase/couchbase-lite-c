@@ -42,9 +42,9 @@ namespace cbl {
             The port can be omitted; it defaults to 80 for `ws` and 443 for `wss`.
             For example: `wss://example.org/dbname`.
             @param url  The url. */
-        static Endpoint urlEndpoint(slice url) {
+        static Endpoint urlEndpoint(std::string_view url) {
             CBLError error {};
-            auto endpoint = CBLEndpoint_CreateWithURL(url, &error);
+            auto endpoint = CBLEndpoint_CreateWithURL(slice(url), &error);
             internal::check(endpoint, error);
             return Endpoint(endpoint);
         }
@@ -77,14 +77,18 @@ namespace cbl {
     class Authenticator {
     public:
         /** Creates a basic authenticator authenticator using username/password credentials. */
-        static Authenticator basicAuthenticator(slice username, slice password) {
-            return Authenticator(CBLAuth_CreatePassword(username, password));
+        static Authenticator basicAuthenticator(std::string_view username, std::string_view password) {
+            return Authenticator(CBLAuth_CreatePassword(slice(username), slice(password)));
         }
 
         /** Creates a sesssion authenticator using a Couchbase Sync Gateway login session identifier,
             and optionally a cookie name (pass NULL for the default.) */
-        static Authenticator sessionAuthenticator(slice sessionId, slice cookieName) {
-            return Authenticator(CBLAuth_CreateSession(sessionId, cookieName));
+        static Authenticator sessionAuthenticator(std::string_view sessionId) {
+            return Authenticator(CBLAuth_CreateSession(slice(sessionId), fleece::nullslice));
+        }
+        static Authenticator sessionAuthenticator(std::string_view sessionId, std::nullptr_t) = delete;
+        static Authenticator sessionAuthenticator(std::string_view sessionId, std::string_view cookieName) {
+            return Authenticator(CBLAuth_CreateSession(slice(sessionId), slice(cookieName)));
         }
         
     protected:
@@ -108,7 +112,7 @@ namespace cbl {
     using ReplicationFilter = std::function<bool(Document, CBLDocumentFlags flags)>;
 
     /** Replication Conflict Resolver Function Callback. */
-    using ConflictResolver = std::function<Document(slice docID,
+    using ConflictResolver = std::function<Document(std::string_view docID,
                                                     const Document localDoc,
                                                     const Document remoteDoc)>;
 
@@ -327,7 +331,7 @@ namespace cbl {
                         
                         auto map = (CollectionToReplCollectionMap*)context;
                         auto resolved = map->find(collection)->second.
-                            conflictResolver(slice(docID), localDoc, remoteDoc);
+                            conflictResolver((std::string_view)slice(docID), localDoc, remoteDoc);
                         
                         auto ref = resolved.ref();
                         if (ref && ref != cLocalDoc && ref != cRemoteDoc) {
@@ -408,9 +412,9 @@ namespace cbl {
             @note A `false` result means the document is not pending, _or_ there was an error.
                   To tell the difference, compare the error code to zero.
             @warning If the given collection is not part of the replication, an error will be thrown. */
-        bool isDocumentPending(slice docID, Collection& collection) const {
+        bool isDocumentPending(std::string_view docID, Collection& collection) const {
             CBLError error;
-            bool pending = CBLReplicator_IsDocumentPending(ref(), docID, collection.ref(), &error);
+            bool pending = CBLReplicator_IsDocumentPending(ref(), slice(docID), collection.ref(), &error);
             internal::check(pending || error.code == 0, error);
             return pending;
         }

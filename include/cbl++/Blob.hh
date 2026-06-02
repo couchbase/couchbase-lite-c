@@ -46,16 +46,28 @@ namespace cbl {
         /** Creates a new blob, given its contents as a single block of data.
             @note  The memory pointed to by `contents` is no longer needed after this call completes
                     (it will have been written to the database.)
-            @param contentType  The MIME type (optional).
             @param contents  The data's address and length. */
-        Blob(slice contentType, slice contents) {
-            _ref = (CBLRefCounted*) CBLBlob_CreateWithData(contentType, contents);
+        Blob(slice contents) {
+            _ref = (CBLRefCounted*) CBLBlob_CreateWithData(fleece::nullslice, contents);
+        }
+        Blob(std::nullptr_t, slice contents) = delete;
+        /** Creates a new blob, given its contents as a single block of data.
+            @note  The memory pointed to by `contents` is no longer needed after this call completes
+                    (it will have been written to the database.)
+            @param contentType  The MIME type.
+            @param contents  The data's address and length. */
+        Blob(std::string_view contentType, slice contents) {
+            _ref = (CBLRefCounted*) CBLBlob_CreateWithData(slice(contentType), contents);
         }
 
         /** Creates a new blob from the data written to a \ref CBLBlobWriteStream.
-            @param contentType  The MIME type (optional).
             @param writer  The blob-writing stream the data was written to. */
-        inline Blob(slice contentType, BlobWriteStream& writer);
+        Blob(BlobWriteStream& writer);
+        Blob(std::nullptr_t, BlobWriteStream& writer) = delete;
+        /** Creates a new blob from the data written to a \ref CBLBlobWriteStream.
+            @param contentType  The MIME type.
+            @param writer  The blob-writing stream the data was written to. */
+        Blob(std::string_view contentType, BlobWriteStream& writer);
 
         /** Creates a Blob instance on an existing blob reference in a document or query result.
             @note If the dict argument is not actually a blob reference, this Blob object will be
@@ -203,8 +215,12 @@ namespace cbl {
         CBLBlobWriteStream* _cbl_nullable _writer {nullptr};
     };
 
-    inline Blob::Blob(slice contentType, BlobWriteStream& writer) {
-        _ref = (CBLRefCounted*) CBLBlob_CreateWithStream(contentType, writer._writer);
+    inline Blob::Blob(BlobWriteStream& writer) {
+        _ref = (CBLRefCounted*) CBLBlob_CreateWithStream(fleece::nullslice, writer._writer);
+        writer._writer = nullptr;
+    }
+    inline Blob::Blob(std::string_view contentType, BlobWriteStream& writer) {
+        _ref = (CBLRefCounted*) CBLBlob_CreateWithStream(slice(contentType), writer._writer);
         writer._writer = nullptr;
     }
 

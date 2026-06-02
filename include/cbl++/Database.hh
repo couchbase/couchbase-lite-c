@@ -60,9 +60,9 @@ namespace cbl {
             This function must be called before opening a database that intends to use the vector search extension.
             @param path The file system path of the directory that contains the Vector Search extension library.
             @note Must be called before opening a database that intends to use the vector search extension. */
-        static void enableVectorSearch(slice path) {
+        static void enableVectorSearch(std::string_view path) {
             CBLError error {};
-            internal::check(CBL_EnableVectorSearch(path, &error), error);
+            internal::check(CBL_EnableVectorSearch(slice(path), &error), error);
         }
     };
 
@@ -90,9 +90,9 @@ namespace cbl {
             @param old  If true, uses the legacy (SHA-1-based) derivation; otherwise uses the
                         current (SHA-256-based) derivation. Pass true only to open databases
                         created with the older algorithm. */
-        EncryptionKey(slice password, bool old = false) {
-            if ( old ) CBLEncryptionKey_FromPasswordOld(this, password);
-            else CBLEncryptionKey_FromPassword(this, password);
+        EncryptionKey(std::string_view password, bool old = false) {
+            if ( old ) CBLEncryptionKey_FromPasswordOld(this, slice(password));
+            else CBLEncryptionKey_FromPassword(this, slice(password));
         }
 
         /** Assigns from an existing C \ref CBLEncryptionKey. */
@@ -144,24 +144,28 @@ namespace cbl {
         // Static database-file operations:
 
         /** Returns true if a database with the given name exists in the given directory.
+            @param name  The database name (without the ".cblite2" extension.) It must be an absolute
+                        or relative path to the database. */
+        static bool exists(std::string_view name) {
+            return CBL_DatabaseExists(slice(name), fleece::nullslice);
+        }
+        static bool exists(std::string_view name, std::nullptr_t) = delete;
+        /** Returns true if a database with the given name exists in the given directory.
             @param name  The database name (without the ".cblite2" extension.)
-            @param inDirectory  The directory containing the database. If NULL, `name` must be an
-                               absolute or relative path to the database. */
-        static bool exists(slice name,
-                           slice inDirectory)
-        {
-            return CBL_DatabaseExists(name, inDirectory);
+            @param inDirectory  The directory containing the database. */
+        static bool exists(std::string_view name, std::string_view inDirectory) {
+            return CBL_DatabaseExists(slice(name), slice(inDirectory));
         }
 
         /** Copies a database file to a new location, and assigns it a new internal UUID to distinguish
             it from the original database when replicating.
             @param fromPath  The full filesystem path to the original database (including extension).
             @param toName  The new database name (without the ".cblite2" extension.) */
-        static void copyDatabase(slice fromPath,
-                                 slice toName)
+        static void copyDatabase(std::string_view fromPath,
+                                 std::string_view toName)
         {
             CBLError error;
-            internal::check( CBL_CopyDatabase(fromPath, toName,
+            internal::check( CBL_CopyDatabase(slice(fromPath), slice(toName),
                                               nullptr, &error), error );
         }
 
@@ -170,8 +174,8 @@ namespace cbl {
             @param fromPath  The full filesystem path to the original database (including extension).
             @param toName  The new database name (without the ".cblite2" extension.)
             @param config  The database configuration (directory and encryption option.) */
-        static void copyDatabase(slice fromPath,
-                                 slice toName,
+        static void copyDatabase(std::string_view fromPath,
+                                 std::string_view toName,
                                  const DatabaseConfiguration& config)
         {
             CBLError error;
@@ -182,21 +186,25 @@ namespace cbl {
 #endif
                 config.fullSync
             };
-            internal::check( CBL_CopyDatabase(fromPath, toName,
+            internal::check( CBL_CopyDatabase(slice(fromPath), slice(toName),
                                               &cblConfig, &error), error );
         }
 
         /** Deletes a database file. If the database file is open, an error will be thrown.
-            @param name  The database name (without the ".cblite2" extension.)
-            @param inDirectory  The directory containing the database. If NULL, `name` must be an
-                                absolute or relative path to the database. */
-        static void deleteDatabase(slice name,
-                                   slice inDirectory)
-        {
+            @param name  The database name (without the ".cblite2" extension.) It must be an
+                        absolute or relative path to the database. */
+        static void deleteDatabase(std::string_view name) {
             CBLError error;
-            if (!CBL_DeleteDatabase(name,
-                                    inDirectory,
-                                    &error) && error.code != 0)
+            if (!CBL_DeleteDatabase(slice(name), fleece::nullslice, &error) && error.code != 0)
+                internal::check(false, error);
+        }
+        static void deleteDatabase(std::string_view name, std::nullptr_t) = delete;
+        /** Deletes a database file. If the database file is open, an error will be thrown.
+            @param name  The database name (without the ".cblite2" extension.)
+            @param inDirectory  The directory containing the database. */
+        static void deleteDatabase(std::string_view name, std::string_view inDirectory) {
+            CBLError error;
+            if (!CBL_DeleteDatabase(slice(name), slice(inDirectory), &error) && error.code != 0)
                 internal::check(false, error);
         }
 
@@ -206,7 +214,7 @@ namespace cbl {
             It's OK to open the same database file multiple times. Each \ref Database instance is
             independent of the others (and must be separately closed and released.)
             @param name  The database name (without the ".cblite2" extension.) */
-        Database(slice name) {
+        Database(std::string_view name) {
             open(name, nullptr);
         }
 
@@ -215,7 +223,7 @@ namespace cbl {
             independent of the others (and must be separately closed and released.)
             @param name  The database name (without the ".cblite2" extension.)
             @param config  The database configuration (directory and encryption option.) */
-        Database(slice name,
+        Database(std::string_view name,
                  const DatabaseConfiguration& config)
         {
             CBLDatabaseConfiguration cblConfig{
@@ -316,9 +324,9 @@ namespace cbl {
         /** Returns the names of all collections in the scope.
             @param scopeName  The name of the scope.
             @return The names of all collections in the scope, or throws if an error occurred. */
-        fleece::MutableArray getCollectionNames(slice scopeName =kCBLDefaultScopeName) const {
+        fleece::MutableArray getCollectionNames(std::string_view scopeName = (std::string_view)slice(kCBLDefaultScopeName)) const {
             CBLError error {};
-            FLMutableArray flNames = CBLDatabase_CollectionNames(ref(), scopeName, &error);
+            FLMutableArray flNames = CBLDatabase_CollectionNames(ref(), slice(scopeName), &error);
             internal::check(error.code == 0, error);
             fleece::MutableArray names(flNames);
             FLMutableArray_Release(flNames);
@@ -331,7 +339,7 @@ namespace cbl {
             @return The \ref Collection, or a falsy Collection if it doesn't exist.
             @throws cbl::Error  On a database error. Note a non-existent collection is not an
                     error — that returns a falsy Collection rather than throwing. */
-        inline Collection getCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName) const;
+        inline Collection getCollection(std::string_view collectionName, std::string_view scopeName = (std::string_view)slice(kCBLDefaultScopeName)) const;
         
         /** Create a new collection.
             The naming rules of the collections and scopes are as follows:
@@ -343,15 +351,15 @@ namespace cbl {
             @param collectionName  The name of the collection.
             @param scopeName  The name of the scope.
             @return A \ref Collection instance. */
-        inline Collection createCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName);
+        inline Collection createCollection(std::string_view collectionName, std::string_view scopeName = (std::string_view)slice(kCBLDefaultScopeName));
         
         /** Delete an existing collection.
             @note The default collection cannot be deleted.
             @param collectionName  The name of the collection.
             @param scopeName  The name of the scope. */
-        inline void deleteCollection(slice collectionName, slice scopeName =kCBLDefaultScopeName) {
+        inline void deleteCollection(std::string_view collectionName, std::string_view scopeName = (std::string_view)slice(kCBLDefaultScopeName)) {
             CBLError error {};
-            internal::check(CBLDatabase_DeleteCollection(ref(), collectionName, scopeName, &error), error);
+            internal::check(CBLDatabase_DeleteCollection(ref(), slice(collectionName), slice(scopeName), &error), error);
         }
         
         /** Returns the default collection. */
@@ -369,7 +377,7 @@ namespace cbl {
                     [N1QL](https://docs.couchbase.com/server/4.0/n1ql/n1ql-language-reference/index.html).
             @param queryString  The query string.
             @return  The new query object. */
-        inline Query createQuery(CBLQueryLanguage language, slice queryString);
+        inline Query createQuery(CBLQueryLanguage language, std::string_view queryString);
 
         // Notifications:
         
@@ -404,9 +412,9 @@ namespace cbl {
         CBL_REFCOUNTED_WITHOUT_COPY_MOVE_BOILERPLATE(Database, RefCounted, CBLDatabase)
 
     private:
-        void open(slice name, const CBLDatabaseConfiguration* _cbl_nullable config) {
+        void open(std::string_view name, const CBLDatabaseConfiguration* _cbl_nullable config) {
             CBLError error {};
-            _ref = (CBLRefCounted*)CBLDatabase_Open(name, config, &error);
+            _ref = (CBLRefCounted*)CBLDatabase_Open(slice(name), config, &error);
             internal::check(_ref != nullptr, error);
             
             _notificationReadyCallbackAccess = std::make_shared<NotificationsReadyCallbackAccess>();

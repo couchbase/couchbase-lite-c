@@ -64,7 +64,7 @@ namespace cbl {
         alloc_slice propertiesAsJSON() const       {return alloc_slice(CBLDocument_CreateJSON(ref()));}
 
         /** A subscript operator to access a document's property value by key. */
-        fleece::Value operator[] (slice key) const {return properties()[key];}
+        fleece::Value operator[] (std::string_view key) const {return properties()[slice(key)];}
 
         // Operations:
         
@@ -107,15 +107,17 @@ namespace cbl {
     public:
         /** Creates a new, empty document in memory, with a randomly-generated unique ID.
             It will not be added to a database until saved. */
-        explicit MutableDocument(nullptr_t)             {_ref = (CBLRefCounted*)CBLDocument_CreateWithID(fleece::nullslice);}
-        
+        explicit MutableDocument(std::nullptr_t)        {_ref = (CBLRefCounted*)CBLDocument_CreateWithID(fleece::nullslice);}
+
         /** Creates a new, empty document in memory, with the given ID.
             It will not be added to a database until saved.
             @note If the given ID conflicts with a document already in the database, that will not
                   be apparent until this document is saved. At that time, the result depends on the
                   conflict handling mode used when saving; see the save functions for details.
             @param docID  The ID of the new document, or NULL to assign a new unique ID. */
-        explicit MutableDocument(slice docID)           {_ref = (CBLRefCounted*)CBLDocument_CreateWithID(docID);}
+        explicit MutableDocument(std::string_view docID) {
+            _ref = (CBLRefCounted*)CBLDocument_CreateWithID(slice(docID));
+        }
 
         /** Returns a mutable document's properties as a mutable dictionary.
             You may modify this dictionary and then call \ref Collection::saveDocument(MutableDocument &doc) to persist the changes.
@@ -126,7 +128,7 @@ namespace cbl {
         /** Sets a property key and value.
             Call \ref Collection::saveDocument(MutableDocument &doc) to persist the changes. */
         template <typename V>
-        void set(slice key, const V &val)               {properties().set(key, val);}
+        void set(std::string_view key, const V &val)    {properties().set(slice(key), val);}
         
         /** Sets a property key and value.
             Call \ref Collection::saveDocument(MutableDocument &doc) to persist the changes. */
@@ -135,8 +137,8 @@ namespace cbl {
 
         /** A subscript operator to access a document's property value by key for either getting or setting the value.
             Call \ref Collection::saveDocument(MutableDocument &doc) to persist the changes. */
-        fleece::keyref<fleece::MutableDict,fleece::slice> operator[] (slice key)
-                                                        {return properties()[key];}
+        fleece::keyref<fleece::MutableDict,fleece::slice> operator[] (std::string_view key)
+                                                        {return properties()[slice(key)];}
 
         /** Sets a mutable document's properties.
             Call \ref Collection::saveDocument(MutableDocument &doc) to persist the changes.
@@ -155,9 +157,9 @@ namespace cbl {
         /** Sets a mutable document's properties from a JSON Dictionary string.
             Call \ref Collection::saveDocument(MutableDocument &doc) to persist the changes.
             @param json  A JSON Dictionary string. */
-        void setPropertiesAsJSON(slice json) {
+        void setPropertiesAsJSON(std::string_view json) {
             CBLError error;
-            internal::check(CBLDocument_SetJSON(ref(), json, &error), error);
+            internal::check(CBLDocument_SetJSON(ref(), slice(json), &error), error);
         }
 
     protected:
@@ -184,14 +186,14 @@ namespace cbl {
 
     // Collection method bodies:
 
-    inline Document Collection::getDocument(slice id) const {
+    inline Document Collection::getDocument(std::string_view id) const {
         CBLError error;
-        return Document::adopt(CBLCollection_GetDocument(ref(), id, &error), &error);
+        return Document::adopt(CBLCollection_GetDocument(ref(), slice(id), &error), &error);
     }
 
-    inline MutableDocument Collection::getMutableDocument(slice id) const {
+    inline MutableDocument Collection::getMutableDocument(std::string_view id) const {
         CBLError error;
-        return MutableDocument::adopt(CBLCollection_GetMutableDocument(ref(), id, &error), &error);
+        return MutableDocument::adopt(CBLCollection_GetMutableDocument(ref(), slice(id), &error), &error);
     }
 
     inline void Collection::saveDocument(MutableDocument &doc) {

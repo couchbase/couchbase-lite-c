@@ -36,7 +36,7 @@ TEST_CASE_METHOD(CBLTest_Cpp, "C++ Database") {
 }
 
 TEST_CASE_METHOD(CBLTest_Cpp, "C++ Database Exist") {
-    CHECK(!Database::exists(kDatabaseName, nullptr));
+    CHECK(!Database::exists(kDatabaseName));
     CHECK(Database::exists(kDatabaseName, CBLTest::databaseDir()));
 }
 

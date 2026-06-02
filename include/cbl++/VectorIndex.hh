@@ -91,10 +91,10 @@ namespace cbl {
             @param centroids    The number of centroids which is the number buckets to partition the vectors in the index.
                               @note The recommended number of centroids is the square root of the number of vectors to be indexed,
                               and the maximum number of centroids supported is 64,000. */
-        VectorIndexConfiguration(CBLQueryLanguage expressionLanguage, slice expression,
+        VectorIndexConfiguration(CBLQueryLanguage expressionLanguage, std::string_view expression,
                                  unsigned dimensions, unsigned centroids)
         :_exprLang(expressionLanguage)
-        ,_expr(expression)
+        ,_expr(slice(expression))
         ,_dimensions(dimensions)
         ,_centroids(centroids)
         { }
@@ -178,9 +178,9 @@ namespace cbl {
         unsigned _centroids;
     };
 
-    void Collection::createVectorIndex(slice name, const VectorIndexConfiguration &config) {
+    void Collection::createVectorIndex(std::string_view name, const VectorIndexConfiguration &config) {
         CBLError error {};
-        internal::check(CBLCollection_CreateVectorIndex(ref(), name, config, &error), error);
+        internal::check(CBLCollection_CreateVectorIndex(ref(), slice(name), config, &error), error);
     }
 }
 

@@ -134,9 +134,9 @@ namespace cbl {
     }
 #endif
 
-    QueryIndex Collection::getIndex(slice name) {
+    QueryIndex Collection::getIndex(std::string_view name) {
         CBLError error {};
-        return QueryIndex::adopt(CBLCollection_GetIndex(ref(), name, &error), &error);
+        return QueryIndex::adopt(CBLCollection_GetIndex(ref(), slice(name), &error), &error);
     }
 }
 
