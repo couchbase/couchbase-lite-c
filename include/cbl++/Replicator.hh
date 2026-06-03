@@ -21,7 +21,9 @@
 #include "cbl/CBLReplicator.h"
 #include "cbl/CBLDefaults.h"
 #include <functional>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <unordered_map>
 

@@ -22,7 +22,9 @@
 #include "cbl/CBLBlob.h"
 #include "cbl/CBLDatabase.h"
 #include "fleece/Mutable.hh"
+#include <optional>
 #include <string>
+#include <string_view>
 
 // VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
 // future releases.
