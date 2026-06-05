@@ -48,18 +48,18 @@ namespace cbl {
         /** Creates a new blob, given its contents as a single block of data.
             @note  The memory pointed to by `contents` is no longer needed after this call completes
                     (it will have been written to the database.)
-            @param contents  The data's address and length.
-            @param contentType  The MIME type (optional). */
-        Blob(slice contents, std::optional<std::string_view> contentType =std::nullopt) {
+            @param contentType  The MIME type (optional).
+            @param contents  The data's address and length. */
+        Blob(std::optional<std::string_view> contentType, slice contents) {
             slice ctype;
             if ( contentType ) ctype = slice(*contentType);
             _ref = (CBLRefCounted*) CBLBlob_CreateWithData(ctype, contents);
         }
 
         /** Creates a new blob from the data written to a \ref CBLBlobWriteStream.
-            @param writer  The blob-writing stream the data was written to.
-            @param contentType  The MIME type (optional). */
-        inline Blob(BlobWriteStream& writer, std::optional<std::string_view> contentType =std::nullopt);
+            @param contentType  The MIME type (optional).
+            @param writer  The blob-writing stream the data was written to. */
+        inline Blob(std::optional<std::string_view> contentType, BlobWriteStream& writer);
 
         /** Creates a Blob instance on an existing blob reference in a document or query result.
             @note If the dict argument is not actually a blob reference, this Blob object will be
@@ -213,7 +213,7 @@ namespace cbl {
         CBLBlobWriteStream* _cbl_nullable _writer {nullptr};
     };
 
-    inline Blob::Blob(BlobWriteStream& writer, std::optional<std::string_view> contentType) {
+    inline Blob::Blob(std::optional<std::string_view> contentType, BlobWriteStream& writer) {
         slice ctype;
         if ( contentType ) ctype = slice(*contentType);
         _ref = (CBLRefCounted*) CBLBlob_CreateWithStream(ctype, writer._writer);
