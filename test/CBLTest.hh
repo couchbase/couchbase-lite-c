@@ -18,6 +18,7 @@
 
 #pragma once
 #include "cbl/CouchbaseLite.h"
+#include "cbl++/Base.hh"
 #include "CBLPrivate.h"
 #include "fleece/slice.hh"
 #include <functional>

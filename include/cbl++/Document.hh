@@ -228,12 +228,9 @@ namespace cbl {
             CBLCollection_DeleteDocumentWithConcurrencyControl(ref(), doc.ref(), cc, &error), error);
     }
 
-    inline bool Collection::purgeDocument(Document &doc) {
-        CBLError error;
-        bool purged = CBLCollection_PurgeDocument(ref(), doc.ref(), &error);
-        if ( !purged && !(error.domain == kCBLDomain && error.code == kCBLErrorNotFound) )
-            internal::check(false, error);
-        return purged;
+    inline void Collection::purgeDocument(Document &doc) {
+        CBLError error{};
+        internal::check(CBLCollection_PurgeDocument(ref(), doc.ref(), &error), error);
     }
 }
 

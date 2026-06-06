@@ -101,6 +101,15 @@ namespace cbl {
         , domain(domain)
         , code(code)
         {}
+        Error()
+        : std::runtime_error("")
+        {}
+        Error& operator=(const Error& other) {
+            std::runtime_error::operator=(other);
+            domain = other.domain;
+            code   = other.code;
+            return *this;
+        }
         CBLErrorDomain domain;         ///< Domain of errors.
         int            code;           ///< Error code, specific to the domain. 0 always means no error.
     };
