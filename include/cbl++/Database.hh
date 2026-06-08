@@ -76,7 +76,8 @@ namespace cbl {
 
         A database encryption key, used in \ref DatabaseConfiguration to open or create an
         encrypted database. */
-    struct EncryptionKey : public CBLEncryptionKey {
+    class EncryptionKey : public CBLEncryptionKey {
+    public:
         /** Creates an empty key (algorithm \ref kCBLEncryptionNone, i.e. no encryption). */
         EncryptionKey()
         : CBLEncryptionKey()
@@ -108,7 +109,8 @@ namespace cbl {
 #endif
 
     /** Database configuration options. */
-    struct DatabaseConfiguration {
+    class DatabaseConfiguration {
+    public:
         std::string      directory;      ///< The parent directory of the database
     #ifdef COUCHBASE_ENTERPRISE
         EncryptionKey encryptionKey;     ///< The database's encryption key (if any)
@@ -332,12 +334,12 @@ namespace cbl {
         
         /** Returns the existing collection with the given name and scope.
             @param collectionName  The name of the collection.
-            @param scopeName  The name of the scope.
+            @param scopeName  The name of the scope (optional). If not supplied, the default scope name will be used.
             @return The \ref Collection, or a falsy Collection if it doesn't exist.
             @throws cbl::Error  On a database error. Note a non-existent collection is not an
                     error — that returns a falsy Collection rather than throwing. */
-        inline Collection getCollection(std::string_view collectionName, std::string_view scopeName = (std::string_view)slice(kCBLDefaultScopeName)) const;
-        
+        inline Collection getCollection(std::string_view collectionName, std::optional<std::string_view> scopeName = std::nullopt) const;
+
         /** Create a new collection.
             The naming rules of the collections and scopes are as follows:
                 - Must be between 1 and 251 characters in length.
@@ -346,26 +348,26 @@ namespace cbl {
                 - Both scope and collection names are case sensitive.
             @note If the collection already exists, the existing collection will be returned.
             @param collectionName  The name of the collection.
-            @param scopeName  The name of the scope.
+            @param scopeName  The name of the scope (optional).  If not supplied, the default scope name will be used.
             @return A \ref Collection instance. */
-        inline Collection createCollection(std::string_view collectionName, std::string_view scopeName = (std::string_view)slice(kCBLDefaultScopeName));
+        inline Collection createCollection(std::string_view collectionName, std::optional<std::string_view> scopeName =std::nullopt);
         
         /** Delete an existing collection.
             @note The default collection cannot be deleted.
             @param collectionName  The name of the collection.
-            @param scopeName  The name of the scope. */
-        inline void deleteCollection(std::string_view collectionName, std::optional<std::string_view> scopeName =slice(kCBLDefaultScopeName)) {
+            @param scopeName  The name of the scope (optional). If not supplied, the default scope name will be used. */
+        void deleteCollection(std::string_view collectionName, std::optional<std::string_view> scopeName =std::nullopt) {
             CBLError error {};
-            slice sname;
+            slice sname = scopeName.value_or(slice(kCBLDefaultScopeName));
             if ( scopeName ) sname = *scopeName;
             internal::check(CBLDatabase_DeleteCollection(ref(), slice(collectionName), sname, &error), error);
         }
-        
+
         /** Returns the default collection. */
         inline Collection getDefaultCollection() const;
         
         // Query:
-        
+
         /** Creates a new query by compiling the input string.
             This is fast, but not instantaneous. If you need to run the same query many times, keep the
             \ref Query object around instead of compiling it each time. If you need to run related queries
@@ -376,7 +378,7 @@ namespace cbl {
                     [N1QL](https://docs.couchbase.com/server/4.0/n1ql/n1ql-language-reference/index.html).
             @param queryString  The query string.
             @return  The new query object. */
-        inline Query createQuery(CBLQueryLanguage language, std::string_view queryString);
+        inline Query createQuery(QueryLanguage language, std::string_view queryString);
 
         // Notifications:
         

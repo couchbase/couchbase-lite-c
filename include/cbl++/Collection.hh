@@ -40,8 +40,11 @@ namespace cbl {
     class VectorIndexConfiguration;
 
     /** Conflict handler used when saving a document. */
-    using CollectionConflictHandler = std::function<bool(MutableDocument documentBeingSaved,
-                                                         Document conflictingDocument)>;
+    using CollectionConflictHandler  = std::function<bool(MutableDocument documentBeingSaved,
+                                                          Document conflictingDocument)>;
+    using FullTextIndexConfiguration = CBLFullTextIndexConfiguration;
+    using ValueIndexConfiguration    = CBLValueIndexConfiguration;
+    using ArrayIndexConfiguration    = CBLArrayIndexConfiguration;
 
     /**
      A Collection class represent a collection which is a container for documents.
@@ -188,7 +191,7 @@ namespace cbl {
             If a non-identical index with that name already exists, it is deleted and re-created.
             @param name  The index name.
             @param config  The value index config. */
-        void createValueIndex(std::string_view name, CBLValueIndexConfiguration config) {
+        void createValueIndex(std::string_view name, ValueIndexConfiguration config) {
             CBLError error;
             internal::check(CBLCollection_CreateValueIndex(ref(), slice(name), config, &error), error);
         }
@@ -199,7 +202,7 @@ namespace cbl {
             If a non-identical index with that name already exists, it is deleted and re-created.
             @param name  The index name.
             @param config  The full-text index config. */
-        void createFullTextIndex(std::string_view name, CBLFullTextIndexConfiguration config) {
+        void createFullTextIndex(std::string_view name, FullTextIndexConfiguration config) {
             CBLError error;
             internal::check(CBLCollection_CreateFullTextIndex(ref(), slice(name), config, &error), error);
         }
@@ -210,7 +213,7 @@ namespace cbl {
             If a non-identical index with that name already exists, it is deleted and re-created.
             @param name  The index name.
             @param config  The array index config. */
-        void createArrayIndex(std::string_view name, CBLArrayIndexConfiguration config) {
+        void createArrayIndex(std::string_view name, ArrayIndexConfiguration config) {
             CBLError error;
             internal::check(CBLCollection_CreateArrayIndex(ref(), slice(name), config, &error), error);
         }
@@ -342,14 +345,16 @@ namespace cbl {
 
     // Database method bodies:
 
-    inline Collection Database::getCollection(std::string_view collectionName, std::string_view scopeName) const {
+    inline Collection Database::getCollection(std::string_view collectionName, std::optional<std::string_view> optScopeName) const {
         CBLError error {};
+        slice scopeName = optScopeName.value_or(slice(kCBLDefaultScopeName));
         return Collection::adopt(CBLDatabase_Collection(ref(), slice(collectionName), slice(scopeName), &error), &error) ;
     }
 
-    inline Collection Database::createCollection(std::string_view collectionName, std::string_view scopeName) {
+    inline Collection Database::createCollection(std::string_view collectionName, std::optional<std::string_view> optScopeName) {
         CBLError error {};
-        return Collection::adopt(CBLDatabase_CreateCollection(ref(), slice(collectionName), slice(scopeName), &error), &error) ;
+        slice scopeName = optScopeName.value_or(slice(kCBLDefaultScopeName));
+        return Collection::adopt(CBLDatabase_CreateCollection(ref(), slice(collectionName), scopeName, &error), &error) ;
     }
 
     inline Collection Database::getDefaultCollection() const {

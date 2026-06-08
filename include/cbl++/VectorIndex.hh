@@ -32,6 +32,9 @@ namespace cbl {
     /** ENTERPRISE EDITION ONLY
      
         Vector Encoding  Type*/
+
+    using DistanceMetric = CBLDistanceMetric;
+
     class VectorEncoding {
     public:
         /** Creates a no-encoding type to use in VectorIndexConfiguration; 4 bytes per dimension, no data loss.
@@ -104,7 +107,7 @@ namespace cbl {
         //-- Accessors:
         
         /** The language used in the expressions.  */
-        CBLQueryLanguage expressionLanguage() const         {return _exprLang;}
+        QueryLanguage expressionLanguage() const         {return _exprLang;}
         
         /** The expression. */
         slice expression() const                            {return _expr;}
@@ -131,7 +134,7 @@ namespace cbl {
         VectorEncoding encoding = VectorEncoding::scalarQuantizer(kCBLSQ8);
         
         /** Distance Metric type. The default value is squared euclidean distance.  */
-        CBLDistanceMetric metric = kCBLDistanceMetricEuclideanSquared;
+        DistanceMetric metric = kCBLDistanceMetricEuclideanSquared;
         
         /** The minimum number of vectors for training the index.
             The default value is zero, meaning that minTrainingSize will be determined based on
@@ -163,7 +166,7 @@ namespace cbl {
         
         /** To  CBLVectorIndexConfiguration */
         operator CBLVectorIndexConfiguration() const {
-            CBLVectorIndexConfiguration config { _exprLang, _expr, _dimensions, _centroids };
+            CBLVectorIndexConfiguration config { _exprLang, slice(_expr), _dimensions, _centroids };
             config.isLazy = isLazy;
             config.encoding = encoding.ref();
             config.metric = metric;
@@ -174,10 +177,10 @@ namespace cbl {
         }
             
     private:
-        CBLQueryLanguage _exprLang;
-        slice _expr;
-        unsigned _dimensions;
-        unsigned _centroids;
+        QueryLanguage _exprLang;
+        std::string   _expr;
+        unsigned      _dimensions;
+        unsigned      _centroids;
     };
 
     void Collection::createVectorIndex(std::string_view name, const VectorIndexConfiguration &config) {

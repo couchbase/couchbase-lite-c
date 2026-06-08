@@ -18,6 +18,7 @@
 
 #pragma once
 #include "cbl/CBLBase.h"
+#include "cbl/CBLQueryTypes.h"
 #include "fleece/slice.hh"
 #include <algorithm>
 #include <functional>
@@ -50,6 +51,8 @@ namespace cbl {
     using slice = fleece::slice;
     /** Convenience alias for \ref fleece::alloc_slice, an owning byte buffer. */
     using alloc_slice = fleece::alloc_slice;
+
+    using QueryLanguage = CBLQueryLanguage;
 
     // Artificial base class of the C++ wrapper classes; just manages ref-counting.
     class RefCounted {

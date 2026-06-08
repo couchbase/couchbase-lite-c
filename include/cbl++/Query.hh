@@ -34,6 +34,8 @@ namespace cbl {
     class ResultSet;
     class ResultSetIterator;
 
+    using QueryLanguage = CBLQueryLanguage;
+
     /** A database query. */
     class Query : private RefCounted {
     public:
@@ -174,7 +176,7 @@ namespace cbl {
         CBL_REFCOUNTED_BOILERPLATE(ResultSet, RefCounted, CBLResultSet)
     };
 
-    /** Forward iterator over a \ref ResultSet, yielding each \ref Result in turn.
+    /** Single-pass iterator over a \ref ResultSet, yielding each \ref Result in turn.
         Obtained via \ref ResultSet::begin and \ref ResultSet::end. */
     class ResultSetIterator {
     public:
