@@ -87,7 +87,7 @@ namespace cbl {
             and optionally a cookie name. */
         static Authenticator sessionAuthenticator(std::string_view sessionId, std::optional<std::string_view> cookieName =std::nullopt) {
             slice cname;
-            if ( cookieName ) cname = slice(*cookieName);
+            if ( cookieName ) cname = *cookieName;
             return Authenticator(CBLAuth_CreateSession(slice(sessionId), cname));
         }
 
