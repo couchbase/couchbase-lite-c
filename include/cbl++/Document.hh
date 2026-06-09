@@ -40,9 +40,6 @@ namespace cbl {
         /** A document's revision ID, which is a short opaque string that's guaranteed to be unique to every change made to
             the document. If the document doesn't exist yet, this function returns an empty string.  */
         std::string revisionID() const             {return internal::asString(CBLDocument_RevisionID(ref()));}
-        
-        /** The hybrid logical timestamp in nanoseconds since epoch that the revision was created. */
-        uint64_t timestamp() const                 {return CBLDocument_Timestamp(ref());}
 
         /** A document's current sequence in the local database.
             This number increases every time the document is saved, and a more recently saved document

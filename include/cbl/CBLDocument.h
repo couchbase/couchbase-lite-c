@@ -107,9 +107,6 @@ FLString CBLDocument_ID(const CBLDocument*) CBLAPI;
     If the document doesn't exist yet, this function returns NULL. */
 FLString CBLDocument_RevisionID(const CBLDocument*) CBLAPI;
 
-/** The hybrid logical timestamp in nanoseconds since epoch that the revision was created. */
-uint64_t CBLDocument_Timestamp(const CBLDocument*) CBLAPI;
-
 /** Returns a document's current sequence in the local database.
     This number increases every time the document is saved, and a more recently saved document
     will have a greater sequence number than one saved earlier, so sequences may be used as an

@@ -90,7 +90,6 @@ CBL_C {
 		CBLScope_CollectionNames;
 		CBLDocument_ID;
 		CBLDocument_RevisionID;
-		CBLDocument_Timestamp;
 		CBLDocument_Sequence;
 		CBLDocument_Collection;
 		CBLDocument_Create;
@@ -154,6 +153,7 @@ CBL_C {
 		CBLDatabase_LastSequence;
 		CBLDatabase_PublicUUID;
 		CBLDocument_CanonicalRevisionID;
+		CBLDocument_Generation;
 		CBLDocument_GetRevisionHistory;
 		CBLError_GetCaptureBacktraces;
 		CBLError_SetCaptureBacktraces;

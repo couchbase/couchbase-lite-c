@@ -92,7 +92,6 @@ CBLScope_Collection
 CBLScope_CollectionNames
 CBLDocument_ID
 CBLDocument_RevisionID
-CBLDocument_Timestamp
 CBLDocument_Sequence
 CBLDocument_Collection
 CBLDocument_Create
@@ -156,6 +155,7 @@ CBLCollection_LastSequence
 CBLDatabase_LastSequence
 CBLDatabase_PublicUUID
 CBLDocument_CanonicalRevisionID
+CBLDocument_Generation
 CBLDocument_GetRevisionHistory
 CBLError_GetCaptureBacktraces
 CBLError_SetCaptureBacktraces

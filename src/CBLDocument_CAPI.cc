@@ -37,7 +37,6 @@ CBLDocument* CBLDocument_MutableCopy(const CBLDocument* doc) noexcept {
 
 FLSlice CBLDocument_ID(const CBLDocument* doc) noexcept                 {return doc->docID();}
 FLSlice CBLDocument_RevisionID(const CBLDocument* doc) noexcept         {return doc->revisionID();}
-uint64_t CBLDocument_Timestamp(const CBLDocument* doc) noexcept         {return doc->timestamp();}
 uint64_t CBLDocument_Sequence(const CBLDocument* doc) noexcept          {return doc->sequence();}
 CBLCollection* CBLDocument_Collection(const CBLDocument* doc) noexcept  {return doc->collection();}
 FLDict CBLDocument_Properties(const CBLDocument* doc) noexcept          {return doc->properties();}
@@ -45,6 +44,11 @@ FLDict CBLDocument_Properties(const CBLDocument* doc) noexcept          {return 
 /** Private API */
 FLSliceResult CBLDocument_CanonicalRevisionID(const CBLDocument* doc) noexcept {
     return FLSliceResult(doc->canonicalRevisionID());
+}
+
+/** Private API */
+unsigned CBLDocument_Generation(const CBLDocument* doc) noexcept {
+    return doc->generation();
 }
 
 /** Private API */

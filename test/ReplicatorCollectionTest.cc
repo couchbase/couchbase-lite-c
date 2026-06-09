@@ -333,26 +333,30 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Default Conflict Resolver with Colle
     REQUIRE(foo1a);
     REQUIRE(CBLDocument_SetJSON(foo1a, slice("{\"greeting\":\"hi\"}"), &error));
     REQUIRE(CBLCollection_SaveDocument(cx[0], foo1a, &error));
+    REQUIRE(CBLDocument_SetJSON(foo1a, slice("{\"greeting\":\"hey\"}"), &error));
+    REQUIRE(CBLCollection_SaveDocument(cx[0], foo1a, &error));
     CBLDocument_Release(foo1a);
-    
+
     auto foo1b = CBLCollection_GetMutableDocument(cy[0], "foo1"_sl, &error);
     REQUIRE(foo1b);
     REQUIRE(CBLDocument_SetJSON(foo1b, slice("{\"greeting\":\"hola\"}"), &error));
     REQUIRE(CBLCollection_SaveDocument(cy[0], foo1b, &error));
     CBLDocument_Release(foo1b);
-    
-    auto bar1b = CBLCollection_GetMutableDocument(cy[1], "bar1"_sl, &error);
-    REQUIRE(bar1b);
-    REQUIRE(CBLDocument_SetJSON(bar1b, slice("{\"greeting\":\"salve\"}"), &error));
-    REQUIRE(CBLCollection_SaveDocument(cy[1], bar1b, &error));
-    CBLDocument_Release(bar1b);
-    
+
     auto bar1a = CBLCollection_GetMutableDocument(cx[1], "bar1"_sl, &error);
     REQUIRE(bar1a);
     REQUIRE(CBLDocument_SetJSON(bar1a, slice("{\"greeting\":\"sawasdee\"}"), &error));
     REQUIRE(CBLCollection_SaveDocument(cx[1], bar1a, &error));
     CBLDocument_Release(bar1a);
-    
+
+    auto bar1b = CBLCollection_GetMutableDocument(cy[1], "bar1"_sl, &error);
+    REQUIRE(bar1b);
+    REQUIRE(CBLDocument_SetJSON(bar1b, slice("{\"greeting\":\"salve\"}"), &error));
+    REQUIRE(CBLCollection_SaveDocument(cy[1], bar1b, &error));
+    REQUIRE(CBLDocument_SetJSON(bar1b, slice("{\"greeting\":\"bonjour\"}"), &error));
+    REQUIRE(CBLCollection_SaveDocument(cy[1], bar1b, &error));
+    CBLDocument_Release(bar1b);
+
     config.replicatorType = kCBLReplicatorTypePush;
     expectedDocumentCount = 0;
     enableDocReplicationListener = true;
@@ -377,12 +381,12 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Default Conflict Resolver with Colle
 
     auto foo1 = CBLCollection_GetDocument(cx[0], "foo1"_sl, &error);
     REQUIRE(foo1);
-    CHECK(Dict(CBLDocument_Properties(foo1)).toJSONString() == "{\"greeting\":\"hola\"}");
+    CHECK(Dict(CBLDocument_Properties(foo1)).toJSONString() == "{\"greeting\":\"hey\"}");
     CBLDocument_Release(foo1);
 
     auto bar1 = CBLCollection_GetDocument(cx[1], "bar1"_sl, &error);
     REQUIRE(bar1);
-    CHECK(Dict(CBLDocument_Properties(bar1)).toJSONString() == "{\"greeting\":\"sawasdee\"}");
+    CHECK(Dict(CBLDocument_Properties(bar1)).toJSONString() == "{\"greeting\":\"bonjour\"}");
     CBLDocument_Release(bar1);
 }
 

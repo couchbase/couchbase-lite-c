@@ -248,39 +248,30 @@ bool CBLDocument::resolveConflict(Resolution resolution, const CBLDocument * _cb
     _properties = nullptr;
     _fromJSON = nullptr;
 
-    slice remoteRevID(c4doc->selectedRev().revID), localRevID(c4doc->revID());
-    
+    // Remote Revision always win so that the resolved revision will not conflict with the remote:
+    slice winner(c4doc->selectedRev().revID), loser(c4doc->revID());
+
     // Note: shared lock b/w database and collection
     return _collection->useLocked<bool>([&](C4Collection *c4col) {
         auto c4db = c4col->getDatabase();
         C4Database::Transaction t(c4db);
 
-        slice winnerRevID, loserRevID;
         alloc_slice mergeBody;
         C4RevisionFlags mergeFlags = 0;
-
-        // When useMerge is true, the new revision will be created under the remote branch which
-        // is the winning branch. When useRemote (remote wins) or useLocal (local wins) is true,
-        // the winning revision will be kept as is and the losing branch will be pruned.
-        if (resolution == Resolution::useLocal) {
-            winnerRevID = localRevID;
-            loserRevID = remoteRevID;
-        } else {
-            winnerRevID = remoteRevID;
-            loserRevID = localRevID;
-
-            if (resolution == Resolution::useMerge) {
-                if (resolveDoc) {
-                    mergeBody = resolveDoc->encodeBody(_collection->database(), c4db, true, mergeFlags);
-                } else {
-                    mergeBody = alloc_slice(size_t(0));
-                    mergeFlags = kRevDeleted;
-                }
+        // When useLocal (local wins) or useMerge is true, the new revision will be created
+        // under the remote branch which is the winning branch. When useRemote (remote wins)
+        // is true, the remote revision will be kept as is and the losing branch will be pruned.
+        if (resolution != Resolution::useRemote) {
+            if (resolveDoc) {
+                mergeBody = resolveDoc->encodeBody(_collection->database(), c4db, true, mergeFlags);
+            } else {
+                mergeBody = alloc_slice(size_t(0));
+                mergeFlags = kRevDeleted;
             }
         }
 
         try {
-            c4doc->resolveConflict(winnerRevID, loserRevID, mergeBody, mergeFlags);
+            c4doc->resolveConflict(winner, loser, mergeBody, mergeFlags);
         } catch (...) {
             C4Error err = C4Error::fromCurrentException();
             if (err == C4Error{LiteCoreDomain, kC4ErrorConflict})
