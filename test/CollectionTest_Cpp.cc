@@ -351,13 +351,13 @@ TEST_CASE_METHOD(CollectionTest_Cpp, "C++ Create, Get and Delete Index", "[Colle
     REQUIRE(names);
     REQUIRE(names.count() == 0);
     
-    CBLValueIndexConfiguration index1 = {kCBLN1QLLanguage, "id"_sl};
+    ValueIndexConfiguration index1 = {kCBLN1QLLanguage, "id"};
     defaultCollection.createValueIndex("index1", index1);
     
-    CBLValueIndexConfiguration index2 = {kCBLN1QLLanguage, "firstname, lastname"_sl};
+    ValueIndexConfiguration index2 = {kCBLN1QLLanguage, "firstname, lastname"};
     defaultCollection.createValueIndex("index2", index2);
     
-    CBLFullTextIndexConfiguration index3 = {kCBLN1QLLanguage, "product.description"_sl, true};
+    FullTextIndexConfiguration index3 = {kCBLN1QLLanguage, "product.description", true};
     defaultCollection.createFullTextIndex("index3", index3);
     
     names = defaultCollection.getIndexNames();
@@ -380,10 +380,10 @@ TEST_CASE_METHOD(CollectionTest_Cpp, "C++ Delete Indexes", "[Collection]") {
     Collection col = db.createCollection("colA", "scopeA");
     REQUIRE(col);
     
-    CBLValueIndexConfiguration index1 = {kCBLN1QLLanguage, "id"_sl};
+    ValueIndexConfiguration index1 = {kCBLN1QLLanguage, "id"};
     col.createValueIndex("index1", index1);
     
-    CBLValueIndexConfiguration index2 = {kCBLN1QLLanguage, "firstname, lastname"_sl};
+    ValueIndexConfiguration index2 = {kCBLN1QLLanguage, "firstname, lastname"};
     col.createValueIndex("index2", index2);
     
     RetainedArray names = col.getIndexNames();

@@ -42,9 +42,75 @@ namespace cbl {
     /** Conflict handler used when saving a document. */
     using CollectionConflictHandler  = std::function<bool(MutableDocument documentBeingSaved,
                                                           Document conflictingDocument)>;
-    using FullTextIndexConfiguration = CBLFullTextIndexConfiguration;
-    using ValueIndexConfiguration    = CBLValueIndexConfiguration;
-    using ArrayIndexConfiguration    = CBLArrayIndexConfiguration;
+    /** Value Index Configuration. */
+    struct ValueIndexConfiguration {
+        /** The language used in the expressions (Required). */
+        QueryLanguage expressionLanguage;
+
+        /** The expressions describing each coloumn of the index (Required).
+            The expressions could be specified in a JSON Array or in N1QL syntax
+            using comma delimiter, depending on expressionLanguage. */
+        std::string expressions;
+
+        /** A predicate expression defining conditions for indexing documents.
+            Only documents satisfying the predicate are included, enabling partial indexes.
+            The expression can be JSON or N1QL/SQL++ syntax, depending on expressionLanguage. */
+        std::string where;
+    };
+
+    /** Full-Text Index Configuration. */
+    struct FullTextIndexConfiguration {
+        /** The language used in the expressions (Required). */
+        QueryLanguage expressionLanguage;
+
+        /** The expressions describing each coloumn of the index (Required).
+            The expressions could be specified in a JSON Array or in N1QL syntax
+            using comma delimiter, depending on expressionLanguage. */
+        std::string expressions;
+
+        /** Should diacritical marks (accents) be ignored?
+            Defaults to  \ref kCBLDefaultFullTextIndexIgnoreAccents.
+            Generally this should be left `false` for non-English text. */
+        bool ignoreAccents;
+
+        /** The dominant language. Setting this enables word stemming, i.e.
+            matching different cases of the same word ("big" and "bigger", for instance) and ignoring
+            common "stop-words" ("the", "a", "of", etc.)
+
+            Can be an ISO-639 language code or a lowercase (English) language name; supported
+            languages are: da/danish, nl/dutch, en/english, fi/finnish, fr/french, de/german,
+            hu/hungarian, it/italian, no/norwegian, pt/portuguese, ro/romanian, ru/russian,
+            es/spanish, sv/swedish, tr/turkish.
+
+            If left null,  or set to an unrecognized language, no language-specific behaviors
+            such as stemming and stop-word removal occur. */
+        std::string language;
+
+        /** A predicate expression defining conditions for indexing documents.
+            Only documents satisfying the predicate are included, enabling partial indexes.
+            The expression can be JSON or N1QL/SQL++ syntax, depending on expressionLanguage. */
+        std::string where;
+    };
+
+    /** Array Index Configuration for indexing property values within arrays
+        in documents, intended for use with the UNNEST query. */
+    struct ArrayIndexConfiguration {
+        /** The language used in the expressions (Required). */
+        QueryLanguage expressionLanguage;
+
+        /** Path to the array, which can be nested to be indexed (Required).
+            Use "[]" to represent a property that is an array of each nested array level.
+            For a single array or the last level array, the "[]" is optional. For instance,
+            use "contacts[].phones" to specify an array of phones within each contact. */
+        std::string path;
+
+        /** Optional expressions representing the values within the array to be
+            indexed. The expressions could be specified in a JSON Array or in N1QL syntax
+            using comma delimiter, depending on expressionLanguage.
+            If the array specified by the path contains scalar values, the expressions
+            should be left unset or set to null. */
+        std::string expressions;
+    };
 
     /**
      A Collection class represent a collection which is a container for documents.
@@ -182,7 +248,7 @@ namespace cbl {
             CBLError error;
             internal::check(CBLCollection_SetDocumentExpiration(ref(), slice(docID), expiration, &error), error);
         }
-        
+
         // Indexes:
 
         /** Creates a value index in the collection.
@@ -193,7 +259,11 @@ namespace cbl {
             @param config  The value index config. */
         void createValueIndex(std::string_view name, ValueIndexConfiguration config) {
             CBLError error;
-            internal::check(CBLCollection_CreateValueIndex(ref(), slice(name), config, &error), error);
+            internal::check(CBLCollection_CreateValueIndex(ref(), slice(name), {
+                config.expressionLanguage,
+                slice(config.expressions),
+                slice(config.where)
+            }, &error), error);
         }
         
         /** Creates a full-text index in the collection.
@@ -204,9 +274,15 @@ namespace cbl {
             @param config  The full-text index config. */
         void createFullTextIndex(std::string_view name, FullTextIndexConfiguration config) {
             CBLError error;
-            internal::check(CBLCollection_CreateFullTextIndex(ref(), slice(name), config, &error), error);
+            internal::check(CBLCollection_CreateFullTextIndex(ref(), slice(name), {
+                config.expressionLanguage,
+                slice(config.expressions),
+                config.ignoreAccents,
+                slice(config.language),
+                slice(config.where)
+            }, &error), error);
         }
-        
+
         /** Creates an array index for use with UNNEST queries in the collection.
             Indexes are persistent.
             If an identical index with that name already exists, nothing happens (and no error is returned.)
@@ -215,9 +291,13 @@ namespace cbl {
             @param config  The array index config. */
         void createArrayIndex(std::string_view name, ArrayIndexConfiguration config) {
             CBLError error;
-            internal::check(CBLCollection_CreateArrayIndex(ref(), slice(name), config, &error), error);
+            internal::check(CBLCollection_CreateArrayIndex(ref(), slice(name), {
+                config.expressionLanguage,
+                slice(config.path),
+                slice(config.expressions)
+            }, &error), error);
         }
-        
+
 #ifdef COUCHBASE_ENTERPRISE
         /** ENTERPRISE EDITION ONLY
          
@@ -226,7 +306,7 @@ namespace cbl {
             If a non-identical index with that name already exists, it is deleted and re-created.
             @param name  The index name.
             @param config  The vector index config. */
-        inline void createVectorIndex(std::string_view name, const VectorIndexConfiguration &config);
+        inline void createVectorIndex(std::string_view name, VectorIndexConfiguration config);
 #endif
 
         /** Deletes an index given its name from the collection. */

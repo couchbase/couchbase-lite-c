@@ -25,9 +25,84 @@
 CBL_ASSUME_NONNULL_BEGIN
 
 namespace cbl {
-    using ConsoleLogSink = CBLConsoleLogSink;
-    using CustomLogSink  = CBLCustomLogSink;
-    using FileLogSink    = CBLFileLogSink;
+
+    enum class LogLevel : uint8_t {
+        Debug,     ///< Debug-level messages with highly detailed information, Available only in debug builds of Couchbase Lite.
+        Verbose,   ///< Verbose messages providing detailed operational information.
+        Info,      ///< Info messages about normal application behavior.
+        Warning,   ///< Warning messages indicating potential issues or unusual conditions.
+        Error,     ///< Error messages indicating a failure or problem that occurred.
+        None       ///< Disables logging entirely. No messages will be logged.
+    };
+
+    /** Subsystems for logging messages. */
+    enum class LogDomain : uint8_t {
+        Database,      ///< Logging domain for the database subsystem.
+        Query,         ///< Logging domain for the query subsystem.
+        Replicator,    ///< Logging domain for the replicator subsystem.
+        Network,       ///< Logging domain for the network subsystem.
+        Listener       ///< Logging domain for the listener subsystem.
+    };
+
+    using LogDomainMask   = CBLLogDomainMask;
+    using LogSinkCallback = CBLLogSinkCallback;
+
+    /** Console log sink configuration for logging to the cosole. */
+    struct ConsoleLogSink {
+        LogLevel level = LogLevel::None;           ///< The minimum level of message to write (Required).
+        LogDomainMask domains;                     ///< Bitmask for enabled log domains. Use zero for all domains.
+
+        static ConsoleLogSink fromCConfiguration(const CBLConsoleLogSink& cSink) {
+            return { LogLevel(cSink.level), cSink.domains};
+        }
+
+        operator CBLConsoleLogSink() const {
+            return {(CBLLogLevel)(uint8_t)level, domains};
+        }
+    };
+
+    /** Custom log sink configuration for logging to a user-defined callback. */
+    struct CustomLogSink {
+        LogLevel level = LogLevel::None;         ///< The minimum level of message to write (Required).
+        LogSinkCallback callback;                ///< Custom log callback (Required).
+        LogDomainMask domains;                   ///< Bitmask for enabled log domains. Use zero for all domains.
+
+        static CustomLogSink fromCConfiguration(const CBLCustomLogSink& cSink) {
+            return { LogLevel(cSink.level), cSink.callback, cSink.domains};
+        }
+
+        operator CBLCustomLogSink() const {
+            return {(CBLLogLevel)(uint8_t)level, callback, domains};
+        }
+    };
+
+    /** File log sink configuration for logging to files. */
+    struct FileLogSink {
+        LogLevel level = LogLevel::None;         ///< The minimum level of message to write (Required).
+        std::string directory;                   ///< The directory where log files will be created (Required).
+
+        /** The maximum number of files to save per log level.
+            The default is \ref kCBLDefaultFileLogSinkMaxKeptFiles. */
+        uint32_t maxKeptFiles;
+
+        /** The size in bytes at which a file will be rotated out (best effort).
+            The default is \ref kCBLDefaultFileLogSinkMaxSize. */
+        size_t maxSize;
+
+        /** Whether or not to log in plaintext as opposed to binary. Plaintext logging is slower and bigger.
+            The default is \ref kCBLDefaultFileLogSinkUsePlaintext. */
+        bool usePlaintext;
+
+        static FileLogSink fromCConfiguration(const CBLFileLogSink& cSink) {
+            return {
+                LogLevel(cSink.level),
+                std::string(cSink.directory),
+                cSink.maxKeptFiles,
+                cSink.maxSize,
+                cSink.usePlaintext
+            };
+        }
+    };
 
     /** Controls where Couchbase Lite writes its log messages. There are three independent
         sinks — console, custom (a user callback), and file — each configured separately.
@@ -43,7 +118,7 @@ namespace cbl {
         /** Returns the current console log sink. It is enabled at the warning level for all
             domains by default. */
         static ConsoleLogSink console() {
-            return CBLLogSinks_Console();
+            return ConsoleLogSink::fromCConfiguration(CBLLogSinks_Console());
         }
 
         /** Sets the custom log sink, whose callback receives each log message. To disable it,
@@ -55,19 +130,25 @@ namespace cbl {
 
         /** Returns the current custom log sink. It is disabled by default. */
         static CustomLogSink custom() {
-            return CBLLogSinks_CustomSink();
+            return CustomLogSink::fromCConfiguration(CBLLogSinks_CustomSink());
         }
 
         /** Sets the file log sink, which writes log messages to files in a directory. To disable
             it, set the sink's log level to \ref kCBLLogNone.
             @param sink  The file log sink configuration. */
-        static void setFile(const FileLogSink& sink) {
-            CBLLogSinks_SetFile(sink);
+        static void setFile(FileLogSink sink) {
+            CBLLogSinks_SetFile({
+                (CBLLogLevel)(uint8_t)sink.level,
+                slice(sink.directory),
+                sink.maxKeptFiles,
+                sink.maxSize,
+                sink.usePlaintext
+            });
         }
 
         /** Returns the current file log sink. It is disabled by default. */
         static FileLogSink file() {
-            return CBLLogSinks_File();
+            return FileLogSink::fromCConfiguration(CBLLogSinks_File());
         }
     };
 }

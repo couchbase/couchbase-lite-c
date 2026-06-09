@@ -110,13 +110,13 @@ namespace cbl {
         QueryLanguage expressionLanguage() const         {return _exprLang;}
         
         /** The expression. */
-        slice expression() const                            {return _expr;}
+        slice expression() const                         {return _expr;}
         
         /** The number of vector dimensions. */
-        unsigned dimensions() const                         {return _dimensions;}
+        unsigned dimensions() const                      {return _dimensions;}
         
         /** The number of centroids. */
-        unsigned centroids() const                          {return _centroids;}
+        unsigned centroids() const                       {return _centroids;}
         
         /** The boolean flag indicating that index is lazy or not. The default value is false.
          
@@ -160,22 +160,26 @@ namespace cbl {
             The default value is zero, meaning that the numProbes will be determined based on
             the number of centroids. */
         unsigned numProbes = 0;
-        
+
+        /** Builds a transient CBLVectorIndexConfiguration referencing this object's data
+            and passes it to `f`. The C config is only valid while `f` is executing. */
+        template <typename F>
+        decltype(auto) withCConfig(F&& f) const {
+            CBLVectorIndexConfiguration cConfig {
+                _exprLang, slice(_expr), _dimensions, _centroids
+            };
+            cConfig.isLazy   = isLazy;
+            cConfig.encoding = encoding.ref();
+            cConfig.metric   = metric;
+            cConfig.minTrainingSize = minTrainingSize;
+            cConfig.maxTrainingSize = maxTrainingSize;
+            cConfig.numProbes = numProbes;
+            return std::forward<F>(f)(cConfig);
+        }
+
     protected:
         friend Collection;
-        
-        /** To  CBLVectorIndexConfiguration */
-        operator CBLVectorIndexConfiguration() const {
-            CBLVectorIndexConfiguration config { _exprLang, slice(_expr), _dimensions, _centroids };
-            config.isLazy = isLazy;
-            config.encoding = encoding.ref();
-            config.metric = metric;
-            config.minTrainingSize = minTrainingSize;
-            config.maxTrainingSize = maxTrainingSize;
-            config.numProbes = numProbes;
-            return config;
-        }
-            
+
     private:
         QueryLanguage _exprLang;
         std::string   _expr;
@@ -183,9 +187,13 @@ namespace cbl {
         unsigned      _centroids;
     };
 
-    void Collection::createVectorIndex(std::string_view name, const VectorIndexConfiguration &config) {
-        CBLError error {};
-        internal::check(CBLCollection_CreateVectorIndex(ref(), slice(name), config, &error), error);
+    void Collection::createVectorIndex(std::string_view name, VectorIndexConfiguration config) {
+        config.withCConfig([this, name](const CBLVectorIndexConfiguration& cConfig) {
+            CBLError error;
+            internal::check(
+                CBLCollection_CreateVectorIndex(ref(), slice(name), cConfig, &error),
+                error);
+        });
     }
 }
 
