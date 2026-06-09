@@ -58,6 +58,16 @@ CBL_CAPI_BEGIN
 FLMutableArray CBLCollection_GetIndexesInfo(const CBLCollection* collection,
                                             CBLError* _cbl_nullable outError) CBLAPI;
 
+/** Deletes a document from the database, given only its ID.
+    @note  If no document with that ID exists, this function will return false but the error
+            code will be zero.
+    @param database  The database.
+    @param docID  The document ID to delete.
+    @param outError  On failure, the error will be written here.
+    @return  True if the document was deleted, false if it doesn't exist or the deletion failed. */
+    bool CBLDatabase_DeleteDocumentByID(CBLDatabase* database,
+                                        FLString docID,
+                                        CBLError* _cbl_nullable outError) CBLAPI;
 
 /** Deletes a document from the collection, given only its ID.
     @note  If no document with that ID exists, this function will return false but the error

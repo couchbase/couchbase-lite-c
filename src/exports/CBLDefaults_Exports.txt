@@ -28,6 +28,7 @@ kCBLDefaultDatabaseMmapDisabled
 ### CBLLogFileConfiguration
 
 kCBLDefaultLogFileUsePlaintext
+kCBLDefaultLogFileUsePlainText
 kCBLDefaultLogFileMaxSize
 kCBLDefaultLogFileMaxRotateCount
 
@@ -48,6 +49,7 @@ kCBLDefaultReplicatorContinuous
 kCBLDefaultReplicatorHeartbeat
 kCBLDefaultReplicatorMaxAttemptsSingleShot
 kCBLDefaultReplicatorMaxAttemptsContinuous
+kCBLDefaultReplicatorMaxAttemptWaitTime
 kCBLDefaultReplicatorMaxAttemptsWaitTime
 kCBLDefaultReplicatorDisableAutoPurge
 kCBLDefaultReplicatorAcceptParentCookies

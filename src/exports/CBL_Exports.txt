@@ -64,13 +64,22 @@ CBLDatabase_Close
 CBLDatabase_Name
 CBLDatabase_Path
 CBLDatabase_Config
+CBLDatabase_Count
 CBLDatabase_Delete
 CBLDatabase_BeginTransaction
 CBLDatabase_EndTransaction
 CBLDatabase_PerformMaintenance
 
+CBLDatabase_AddChangeListener
+CBLDatabase_AddDocumentChangeListener
 CBLDatabase_BufferNotifications
 CBLDatabase_SendNotifications
+
+CBLDatabase_CreateValueIndex
+CBLDatabase_CreateFullTextIndex
+CBLDatabase_DeleteIndex
+CBLDatabase_GetIndexNames
+
 
 ### DATABASE SCOPE AND COLLECTION MANAGEMENT
 
@@ -139,6 +148,18 @@ CBLDocument_MutableProperties
 CBLDocument_SetProperties
 CBLDocument_CreateJSON
 CBLDocument_SetJSON
+
+CBLDatabase_GetDocument
+CBLDatabase_GetMutableDocument
+CBLDatabase_SaveDocument
+CBLDatabase_SaveDocumentWithConcurrencyControl
+CBLDatabase_SaveDocumentWithConflictHandler
+CBLDatabase_DeleteDocument
+CBLDatabase_DeleteDocumentWithConcurrencyControl
+CBLDatabase_PurgeDocument
+CBLDatabase_PurgeDocumentByID
+CBLDatabase_GetDocumentExpiration
+CBLDatabase_SetDocumentExpiration
 
 ### LOGGING
 
@@ -212,6 +233,7 @@ CBLCollection_DeleteDocumentByID
 CBLCollection_GetIndexesInfo
 CBLCollection_LastSequence
 
+CBLDatabase_DeleteDocumentByID
 CBLDatabase_LastSequence
 CBLDatabase_PublicUUID
 
