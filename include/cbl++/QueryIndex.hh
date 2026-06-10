@@ -37,7 +37,7 @@ namespace cbl {
         // Accessors:
         
         /** The index's name. */
-        std::string name() const                        {return asString(CBLQueryIndex_Name(ref()));}
+        std::string name() const                        {return internal::asString(CBLQueryIndex_Name(ref()));}
         
         /** A index's collection. */
         Collection collection() const                   {return Collection(CBLQueryIndex_Collection(ref()));}
@@ -61,7 +61,7 @@ namespace cbl {
         
         static QueryIndex adopt(const CBLQueryIndex* _cbl_nullable i, CBLError *error) {
             if (!i && error->code != 0)
-                throw *error;
+                internal::check(false, *error);
             QueryIndex index;
             index._ref = (CBLRefCounted*)i;
             return index;
@@ -96,7 +96,7 @@ namespace cbl {
             @param dimension  The dimension of `vector`. Must be equal to the dimension value set in the vector index config. */
         void setVector(unsigned index, const float* _cbl_nullable vector, size_t dimension) {
             CBLError error;
-            check(CBLIndexUpdater_SetVector(ref(), index, vector, dimension, &error), error);
+            internal::check(CBLIndexUpdater_SetVector(ref(), index, vector, dimension, &error), error);
         }
         
         /** Skip setting the vector for the value corresponding to the index.
@@ -112,13 +112,12 @@ namespace cbl {
             @warning The index updater cannot be used after calling \ref IndexUpdater::finish. */
         void finish() {
             CBLError error;
-            check(CBLIndexUpdater_Finish(ref(), &error), error);
+            internal::check(CBLIndexUpdater_Finish(ref(), &error), error);
         }
         
     protected:
         static IndexUpdater adopt(const CBLIndexUpdater* _cbl_nullable i, CBLError *error) {
-            if (!i && error->code != 0)
-                throw *error;
+            internal::check(i != nullptr || error->code == 0, *error);
             IndexUpdater updater;
             updater._ref = (CBLRefCounted*)i;
             return updater;
@@ -135,9 +134,9 @@ namespace cbl {
     }
 #endif
 
-    QueryIndex Collection::getIndex(slice name) {
+    QueryIndex Collection::getIndex(std::string_view name) {
         CBLError error {};
-        return QueryIndex::adopt(CBLCollection_GetIndex(ref(), name, &error), &error);
+        return QueryIndex::adopt(CBLCollection_GetIndex(ref(), slice(name), &error), &error);
     }
 }
 

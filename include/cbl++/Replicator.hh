@@ -21,7 +21,9 @@
 #include "cbl/CBLReplicator.h"
 #include "cbl/CBLDefaults.h"
 #include <functional>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <unordered_map>
 
@@ -42,11 +44,10 @@ namespace cbl {
             The port can be omitted; it defaults to 80 for `ws` and 443 for `wss`.
             For example: `wss://example.org/dbname`.
             @param url  The url. */
-        static Endpoint urlEndpoint(slice url) {
+        static Endpoint urlEndpoint(std::string_view url) {
             CBLError error {};
-            auto endpoint = CBLEndpoint_CreateWithURL(url, &error);
-            if (!endpoint)
-                throw error;
+            auto endpoint = CBLEndpoint_CreateWithURL(slice(url), &error);
+            internal::check(endpoint, error);
             return Endpoint(endpoint);
         }
         
@@ -78,16 +79,18 @@ namespace cbl {
     class Authenticator {
     public:
         /** Creates a basic authenticator authenticator using username/password credentials. */
-        static Authenticator basicAuthenticator(slice username, slice password) {
-            return Authenticator(CBLAuth_CreatePassword(username, password));
+        static Authenticator basicAuthenticator(std::string_view username, std::string_view password) {
+            return Authenticator(CBLAuth_CreatePassword(slice(username), slice(password)));
         }
 
         /** Creates a sesssion authenticator using a Couchbase Sync Gateway login session identifier,
-            and optionally a cookie name (pass NULL for the default.) */
-        static Authenticator sessionAuthenticator(slice sessionId, slice cookieName) {
-            return Authenticator(CBLAuth_CreateSession(sessionId, cookieName));
+            and optionally a cookie name. */
+        static Authenticator sessionAuthenticator(std::string_view sessionId, std::optional<std::string_view> cookieName =std::nullopt) {
+            slice cname;
+            if ( cookieName ) cname = *cookieName;
+            return Authenticator(CBLAuth_CreateSession(slice(sessionId), cname));
         }
-        
+
     protected:
         friend class ReplicatorConfiguration;
         
@@ -109,7 +112,7 @@ namespace cbl {
     using ReplicationFilter = std::function<bool(Document, CBLDocumentFlags flags)>;
 
     /** Replication Conflict Resolver Function Callback. */
-    using ConflictResolver = std::function<Document(slice docID,
+    using ConflictResolver = std::function<Document(std::string_view docID,
                                                     const Document localDoc,
                                                     const Document remoteDoc)>;
 
@@ -328,7 +331,7 @@ namespace cbl {
                         
                         auto map = (CollectionToReplCollectionMap*)context;
                         auto resolved = map->find(collection)->second.
-                            conflictResolver(slice(docID), localDoc, remoteDoc);
+                            conflictResolver((std::string_view)slice(docID), localDoc, remoteDoc);
                         
                         auto ref = resolved.ref();
                         if (ref && ref != cLocalDoc && ref != cRemoteDoc) {
@@ -347,7 +350,7 @@ namespace cbl {
             
             CBLError error {};
             _ref = (CBLRefCounted*) CBLReplicator_Create(&c_config, &error);
-            check(_ref, error);
+            internal::check(_ref, error);
         }
 
         /** Starts a replicator, asynchronously. Does nothing if it's already started.
@@ -384,7 +387,7 @@ namespace cbl {
         /** Returns the ID used to correlate the replication session with the remote endpoint.
             This value is intended for logging and diagnostics, and is an empty string until the
             replicator receives a correlation ID from the remote endpoint. */
-        std::string correlationID() const  {return asString(CBLReplicator_CorrelationID(ref()));}
+        std::string correlationID() const  {return internal::asString(CBLReplicator_CorrelationID(ref()));}
 
         /** Indicates which documents in the given collection have local changes that have not yet been
             pushed to the server by this replicator. This is of course a snapshot, that will go out of date
@@ -397,7 +400,7 @@ namespace cbl {
         fleece::Dict pendingDocumentIDs(Collection& collection) const {
             CBLError error;
             fleece::Dict result = CBLReplicator_PendingDocumentIDs(ref(), collection.ref(), &error);
-            check(result != nullptr, error);
+            internal::check(result != nullptr, error);
             return result;
         }
         
@@ -409,10 +412,10 @@ namespace cbl {
             @note A `false` result means the document is not pending, _or_ there was an error.
                   To tell the difference, compare the error code to zero.
             @warning If the given collection is not part of the replication, an error will be thrown. */
-        bool isDocumentPending(fleece::slice docID, Collection& collection) const {
+        bool isDocumentPending(std::string_view docID, Collection& collection) const {
             CBLError error;
-            bool pending = CBLReplicator_IsDocumentPending(ref(), docID, collection.ref(), &error);
-            check(pending || error.code == 0, error);
+            bool pending = CBLReplicator_IsDocumentPending(ref(), slice(docID), collection.ref(), &error);
+            internal::check(pending || error.code == 0, error);
             return pending;
         }
         
@@ -493,6 +496,8 @@ namespace cbl {
             return *this;
         }
         
+        /** Releases the underlying C \ref CBLReplicator and drops the C++ collection-configuration
+            map. After this call the object is empty (\ref operator bool returns false). */
         void clear() {
             RefCounted::clear();
             _collectionMap.reset();

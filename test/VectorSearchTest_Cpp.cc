@@ -43,12 +43,12 @@ public:
     
     Database _wordDB;
     Collection _wordsColl;
-    
-    class WordPredictiveModel : public PredictiveModel {
+
+    class WordPredictiveModel {
     public:
         WordPredictiveModel(VectorSearchTest* test) : _test(test) { }
-        
-        fleece::MutableDict prediction(fleece::Dict input) noexcept {
+
+        fleece::MutableDict operator()(fleece::Dict input) noexcept {
             auto word = input["word"].asString();
             if (!word) return MutableDict(nullptr);
             
@@ -62,11 +62,11 @@ public:
     private:
         VectorSearchTest* _test {};
     };
-    
+
     void registerPredictiveModel() {
-        Prediction::registerModel(kPredictiveModelCppName, make_unique<WordPredictiveModel>(this));
+        Prediction::registerModel(kPredictiveModelCppName, WordPredictiveModel(this));
     }
-    
+
     void unregisterPredictiveModel() {
         Prediction::unregisterModel(kPredictiveModelCppName);
     }

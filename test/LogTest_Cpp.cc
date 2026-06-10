@@ -29,12 +29,12 @@ public:
     }
     
     ~LogTest_Cpp() {
-        LogSinks::setFile({ kCBLLogNone, kFLSliceNull });
-        LogSinks::setCustom({ kCBLLogNone });
+        LogSinks::setFile({});
+        LogSinks::setCustom({});
         LogSinks::setConsole(_backupConsoleLogSink);
     }
 private:
-    CBLConsoleLogSink _backupConsoleLogSink;
+    ConsoleLogSink _backupConsoleLogSink;
 };
 
 TEST_CASE_METHOD(LogTest_Cpp, "Default Log Sink Cpp", "[Log]") {
@@ -47,13 +47,13 @@ TEST_CASE_METHOD(LogTest_Cpp, "Default Log Sink Cpp", "[Log]") {
     CHECK(custom.domains == 0);
     CHECK(custom.callback == nullptr);
     
-    CBLFileLogSink logSink = LogSinks::file();
+    FileLogSink logSink = LogSinks::file();
     CHECK(logSink.level == kCBLLogNone);
-    CHECK(logSink.directory == kFLSliceNull);
+    CHECK(logSink.directory.empty());
 }
 
 TEST_CASE_METHOD(LogTest_Cpp, "Console Log Sink Cpp: Set and Get", "[Log]") {
-    LogSinks::setConsole({ kCBLLogVerbose, kCBLLogDomainMaskAll });
+    LogSinks::setConsole({kCBLLogVerbose, kCBLLogDomainMaskAll});
     CBLConsoleLogSink logSink = LogSinks::console();
     CHECK(logSink.level == kCBLLogVerbose);
     CHECK(logSink.domains == kCBLLogDomainMaskAll);

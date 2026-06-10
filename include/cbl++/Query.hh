@@ -21,6 +21,7 @@
 #include "cbl/CBLQuery.h"
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 // VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
@@ -48,10 +49,10 @@ namespace cbl {
             @param language  The query language
             @param queryString  The query string.
          */
-        Query(const Database& db, CBLQueryLanguage language, slice queryString) {
+        Query(const Database& db, CBLQueryLanguage language, std::string_view queryString) {
             CBLError error;
-            auto q = CBLDatabase_CreateQuery(db.ref(), language, queryString, nullptr, &error);
-            check(q, error);
+            auto q = CBLDatabase_CreateQuery(db.ref(), language, slice(queryString), nullptr, &error);
+            internal::check(q, error);
             _ref = (CBLRefCounted*)q;
         }
 
@@ -135,15 +136,15 @@ namespace cbl {
             This may return a NULL Value, indicating `MISSING`, if the value doesn't exist, e.g. if
             the column is a property that doesn't exist in the document. (Or, of course, if the key
             is not a column name in this query.) */
-        fleece::Value valueForKey(slice key) const {
-            return CBLResultSet_ValueForKey(_ref, key);
+        fleece::Value valueForKey(std::string_view key) const {
+            return CBLResultSet_ValueForKey(_ref, slice(key));
         }
 
         /** A subscript operator that returns value of a column of the current result, given its (zero-based) numeric index.  */
         fleece::Value operator[](int i) const                           {return valueAtIndex(i);}
         
         /** A subscript operator that returns the value of a column of the current result, given its column name.  */
-        fleece::Value operator[](slice key) const                       {return valueForKey(key);}
+        fleece::Value operator[](std::string_view key) const            {return valueForKey(key);}
 
     protected:
         explicit Result(CBLResultSet* _cbl_nullable ref)                :_ref(ref) { }
@@ -155,7 +156,11 @@ namespace cbl {
     class ResultSet : private RefCounted {
     public:
         using iterator = ResultSetIterator;
+
+        /** Returns an iterator positioned at the first result. */
         inline iterator begin();
+
+        /** Returns an iterator marking the end of the results. */
         inline iterator end();
 
     private:
@@ -169,15 +174,21 @@ namespace cbl {
         CBL_REFCOUNTED_BOILERPLATE(ResultSet, RefCounted, CBLResultSet)
     };
 
-    // Implementation of ResultSet::iterator
+    /** Single-pass iterator over a \ref ResultSet, yielding each \ref Result in turn.
+        Obtained via \ref ResultSet::begin and \ref ResultSet::end. */
     class ResultSetIterator {
     public:
+        /** Returns the current \ref Result. */
         const Result& operator*()  const {return _result;}
+        /** Allows access to the current \ref Result via `->`. */
         const Result& operator->() const {return _result;}
 
+        /** Returns true if both iterators reference the same underlying result set position. */
         bool operator== (const ResultSetIterator &i) const {return _rs == i._rs;}
+        /** Returns true if the iterators differ. */
         bool operator!= (const ResultSetIterator &i) const {return _rs != i._rs;}
 
+        /** Advances to the next result, or to end-of-results if there are no more. */
         ResultSetIterator& operator++() {
             if (!CBLResultSet_Next(_rs.ref()))
                 _rs = ResultSet{};
@@ -212,19 +223,28 @@ namespace cbl {
     inline ResultSet Query::execute() {
         CBLError error;
         auto rs = CBLQuery_Execute(ref(), &error);
-        check(rs, error);
+        internal::check(rs, error);
         return ResultSet::adopt(rs);
     }
 
+    /** The token returned by \ref Query::addChangeListener for a live query. It holds the
+        listener registration, which is removed when this token is destroyed or
+        \ref ListenerToken::remove() is called. */
     class Query::ChangeListener : public ListenerToken<Change> {
     public:
+        /** Creates an empty, uninitialized change listener token. */
         ChangeListener(): ListenerToken<Change>() { }
-        
+
+        /** Creates a change listener token bound to a specific query and callback.
+            @param query  The query whose changes are being listened to.
+            @param cb     The callback that will receive change notifications. */
         ChangeListener(Query query, Callback cb)
         :ListenerToken<Change>(cb)
         ,_query(std::move(query))
         { }
 
+        /** Returns the most recent results computed by the live query.
+            @throws std::runtime_error  If called on an uninitialized (default-constructed) listener. */
         ResultSet results() {
             if (!_query) {
                 throw std::runtime_error("Not allowed to call on uninitialized ChangeListeners");
@@ -236,7 +256,7 @@ namespace cbl {
         static ResultSet getResults(Query query, CBLListenerToken* token) {
             CBLError error;
             auto rs = CBLQuery_CopyCurrentResults(query.ref(), token, &error);
-            check(rs, error);
+            internal::check(rs, error);
             return ResultSet::adopt(rs);
         }
 
@@ -244,14 +264,18 @@ namespace cbl {
         friend Change;
     };
 
+    /** The change passed to a live query's listener callback, giving access to the updated results. */
     class Query::Change {
     public:
+        /** Copy constructor. */
         Change(const Change& src) : _query(src._query), _token(src._token) {}
 
+        /** Returns the query's results as of this change. */
         ResultSet results() {
             return ChangeListener::getResults(_query, _token);
         }
 
+        /** Returns the query that produced this change. */
         Query query() {
             return _query;
         }
@@ -287,7 +311,7 @@ namespace cbl {
 
     // Query
     
-    Query Database::createQuery(CBLQueryLanguage language, slice queryString) {
+    Query Database::createQuery(CBLQueryLanguage language, std::string_view queryString) {
         return Query(*this, language, queryString);
     }
 }

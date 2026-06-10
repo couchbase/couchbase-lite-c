@@ -24,6 +24,7 @@ function(set_test_source_files)
         ${T_DIR}/DatabaseTest_Cpp.cc
         ${T_DIR}/DocumentTest.cc
         ${T_DIR}/DocumentTest_Cpp.cc
+        ${T_DIR}/EncryptableTest_Cpp.cc
         ${T_DIR}/LogTest.cc
         ${T_DIR}/LogTest_Cpp.cc
         ${T_DIR}/PerfTest.cc

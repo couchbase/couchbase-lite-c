@@ -18,11 +18,13 @@
 
 #pragma once
 #include "cbl/CBLBase.h"
+#include "cbl/CBLQueryTypes.h"
 #include "fleece/slice.hh"
 #include <algorithm>
 #include <functional>
 #include <cassert>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 #if DEBUG
@@ -34,6 +36,8 @@
 
 CBL_ASSUME_NONNULL_BEGIN
 
+/** Equality for two \ref CBLError values. Two errors are equal when both indicate success
+    (`code == 0`), or when they share the same `domain` and `code`. */
 inline bool operator== (const CBLError &e1, const CBLError &e2) {
     if (e1.code != 0)
         return e1.domain == e2.domain && e1.code == e2.code;
@@ -43,8 +47,12 @@ inline bool operator== (const CBLError &e1, const CBLError &e2) {
 
 namespace cbl {
 
+    /** Convenience alias for \ref fleece::slice, a non-owning view of a byte range. */
     using slice = fleece::slice;
+    /** Convenience alias for \ref fleece::alloc_slice, an owning byte buffer. */
     using alloc_slice = fleece::alloc_slice;
+
+    using QueryLanguage = CBLQueryLanguage;
 
     // Artificial base class of the C++ wrapper classes; just manages ref-counting.
     class RefCounted {
@@ -72,28 +80,60 @@ namespace cbl {
         }
 
         void clear()                                    {CBL_Release(_ref); _ref = nullptr;}
-        bool valid() const                              {return _ref != nullptr;} \
-        explicit operator bool() const                  {return valid();} \
-
-        static std::string asString(FLSlice s)          {return slice(s).asString();}
-        static std::string asString(FLSliceResult &&s)  {return alloc_slice(s).asString();}
-
-        static void check(bool ok, CBLError &error) {
-            if (!ok) {
-#if DEBUG
-                alloc_slice message = CBLError_Message(&error);
-                CBL_Log(kCBLLogDomainDatabase, kCBLLogError, "API returning error %d/%d: %.*s",
-                        error.domain, error.code, (int)message.size, (char*)message.buf);
-#endif
-                throw error;
-            }
-        }
+        bool valid() const                              {return _ref != nullptr;}
+        explicit operator bool() const                  {return valid();}
 
         CBLRefCounted* _cbl_nullable _ref;
 
         friend class Extension;
         friend class Transaction;
     };
+
+    /** The exception thrown by the Couchbase Lite C++ API to report a Couchbase Lite failure.
+        It derives from `std::runtime_error` (and thus `std::exception`) and carries the
+        failure's \ref domain and \ref code (the same values as the C API's `CBLError`), plus a
+        human-readable message available via `what()`. Catch this type when you need the
+        structured error information; catch `std::exception` for general handling. */
+    struct Error: std::runtime_error {
+        /** Constructs an Error.
+            @param domain  The error domain.
+            @param code    The error code, specific to the domain.
+            @param what    The human-readable error message (returned by `what()`). */
+        Error(CBLErrorDomain domain, int code, const std::string& what)
+        : std::runtime_error(what)
+        , domain(domain)
+        , code(code)
+        {}
+        Error()
+        : std::runtime_error("")
+        , domain(kCBLDomain)
+        , code(0)
+        {}
+        Error& operator=(const Error& other) {
+            std::runtime_error::operator=(other);
+            domain = other.domain;
+            code   = other.code;
+            return *this;
+        }
+        CBLErrorDomain domain;         ///< Domain of errors.
+        int            code;           ///< Error code, specific to the domain. 0 always means no error.
+    };
+
+    namespace internal {
+        inline std::string asString(FLSlice s)          {return slice(s).asString();}
+        inline std::string asString(FLSliceResult &&s)  {return alloc_slice(s).asString();}
+
+        inline void check(bool ok, CBLError &error) {
+            if (!ok) {
+                alloc_slice message = CBLError_Message(&error);
+#if DEBUG
+                CBL_Log(kCBLLogDomainDatabase, kCBLLogError, "API returning error %d/%d: %.*s",
+                        error.domain, error.code, (int)message.size, (char*)message.buf);
+#endif
+                throw cbl::Error{error.domain, error.code, message.asString()};
+            }
+        }
+    }
 
 // Internal use only: Copy/move ctors and assignment ops that have to be declared in subclasses
 #define CBL_REFCOUNTED_WITHOUT_COPY_MOVE_BOILERPLATE(CLASS, SUPER, C_TYPE) \
@@ -119,24 +159,33 @@ public: \
     /** A token representing a registered listener; instances are returned from the various
         methods that register listeners, such as \ref Database::addListener.
         When this object goes out of scope, the listener will be unregistered.
-        @note ListenerToken is now allowed to copy. */
+        @note ListenerToken is not allowed to copy. */
     template <class... Args>
     class ListenerToken {
     public:
+        /** The type of the user callback that this token holds. */
         using Callback = std::function<void(Args...)>;
 
+        /** Creates an empty, unregistered token. */
         ListenerToken()                                  =default;
+        /** Unregisters the listener (if any) and releases the token. */
         ~ListenerToken()                                 {CBLListener_Remove(_token);}
 
+        /** Creates a token wrapping the given callback. The token is not yet registered with
+            any listener API; call the appropriate `addListener` method to do that.
+            @param cb  The callback to be invoked when notifications arrive. */
         ListenerToken(Callback cb)
         :_callback(new Callback(cb))
         { }
 
+        /** Move-constructs a token, transferring ownership of the underlying listener registration. */
         ListenerToken(ListenerToken &&other)
         :_token(other._token),
         _callback(std::move(other._callback))
         {other._token = nullptr;}
 
+        /** Move-assigns a token: removes this token's existing listener (if any) and adopts the
+            other token's registration. */
         ListenerToken& operator=(ListenerToken &&other) {
             CBLListener_Remove(_token);
             _token = other._token;
@@ -152,10 +201,17 @@ public: \
             _callback = nullptr;
         }
 
+        /** Returns an opaque pointer used internally as the `context` argument for C-API callbacks. */
         void* _cbl_nullable context() const             {return _callback.get();}
+        /** Returns the underlying \ref CBLListenerToken (the C registration handle), or NULL
+            if not registered. */
         CBLListenerToken* _cbl_nullable token() const   {return _token;}
+        /** Assigns the underlying \ref CBLListenerToken returned from a C-API `AddXxxListener`
+            call. May only be called once on a freshly constructed token. */
         void setToken(CBLListenerToken* token)          {assert(!_token); _token = token;}
 
+        /** Static thunk used as the C-API callback. Forwards the call to the C++ \ref Callback
+            stored in `context` (which must be a pointer returned from \ref context). */
         static void call(void* _cbl_nullable context, Args... args) {
             auto listener = (Callback*)context;
             (*listener)(args...);

@@ -19,11 +19,29 @@
 // VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
 // future releases.
 
+/** \defgroup cbl_cpp Couchbase Lite C++ API
+    @{
+
+    \section error_handling Error handling
+
+    Functions in the Couchbase Lite C++ API report Couchbase Lite-specific failures by
+    throwing \ref cbl::Error, a subclass of `std::runtime_error` that provides the error
+    domain, error code, and a human-readable message from `what()`.
+
+    Catch \ref cbl::Error when you need Couchbase Lite-specific error details. Catch
+    `std::exception` for general error handling.
+
+    `noexcept` marks functions that are guaranteed not to throw. All other functions
+    should be treated as potentially throwing on failure, unless otherwise documented.
+
+    @} */
+
 #pragma once
 #include "Blob.hh"
 #include "Collection.hh"
 #include "Database.hh"
 #include "Document.hh"
+#include "Encryptable.hh"
 #include "LogSinks.hh"
 #include "Prediction.hh"
 #include "Query.hh"
