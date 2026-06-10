@@ -40,7 +40,6 @@ function(set_test_source_files)
         ${T_DIR}/VectorSearchTest.cc
         ${T_DIR}/VectorSearchTest_Cpp.cc
         ${T_DIR}/LazyVectorIndexTest.cc
-        ${T_DIR}/../vendor/couchbase-lite-core/vendor/fleece/Fleece/Support/Backtrace.cc
         ${T_DIR}/../vendor/couchbase-lite-core/vendor/fleece/Fleece/Support/LibC++Debug.cc
         ${T_DIR}/../vendor/couchbase-lite-core/vendor/fleece/Fleece/Support/betterassert.cc
         PARENT_SCOPE
