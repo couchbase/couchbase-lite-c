@@ -47,7 +47,7 @@ namespace cbl {
         /** The language used in the expressions (Required). */
         QueryLanguage expressionLanguage;
 
-        /** The expressions describing each coloumn of the index (Required).
+        /** The expressions describing each column of the index (Required).
             The expressions could be specified in a JSON Array or in N1QL syntax
             using comma delimiter, depending on expressionLanguage. */
         std::string expressions;

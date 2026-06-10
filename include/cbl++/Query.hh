@@ -34,8 +34,6 @@ namespace cbl {
     class ResultSet;
     class ResultSetIterator;
 
-    using QueryLanguage = CBLQueryLanguage;
-
     /** A database query. */
     class Query : private RefCounted {
     public:

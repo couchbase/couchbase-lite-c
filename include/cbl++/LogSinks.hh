@@ -21,6 +21,8 @@
 
 #pragma once
 #include "cbl/CBLLogSinks.h"
+#include "cbl++/Base.hh"
+#include "cbl/CBLDefaults.h"
 
 CBL_ASSUME_NONNULL_BEGIN
 
@@ -31,7 +33,7 @@ namespace cbl {
     using LogLevel        = CBLLogLevel;
     using LogDomain       = CBLLogDomain;
 
-    /** Console log sink configuration for logging to the cosole. */
+    /** Console log sink configuration for logging to the console. */
     struct ConsoleLogSink {
         LogLevel level = kCBLLogNone;           ///< The minimum level of message to write (Required).
         LogDomainMask domains;                  ///< Bitmask for enabled log domains. Use zero for all domains.
@@ -59,15 +61,15 @@ namespace cbl {
 
         /** The maximum number of files to save per log level.
             The default is \ref kCBLDefaultFileLogSinkMaxKeptFiles. */
-        uint32_t maxKeptFiles;
+        uint32_t maxKeptFiles = kCBLDefaultFileLogSinkMaxKeptFiles;
 
         /** The size in bytes at which a file will be rotated out (best effort).
             The default is \ref kCBLDefaultFileLogSinkMaxSize. */
-        size_t maxSize;
+        size_t maxSize = kCBLDefaultFileLogSinkMaxSize;
 
         /** Whether or not to log in plaintext as opposed to binary. Plaintext logging is slower and bigger.
             The default is \ref kCBLDefaultFileLogSinkUsePlaintext. */
-        bool usePlaintext;
+        bool usePlaintext = kCBLDefaultFileLogSinkUsePlaintext;
     };
 
     /** Controls where Couchbase Lite writes its log messages. There are three independent

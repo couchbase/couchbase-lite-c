@@ -426,9 +426,9 @@ TEST_CASE_METHOD(DocumentTest_Cpp, "C++ Purge Non Existing Doc", "[Document]") {
 
     ExpectingExceptions x;
 
-    cbl::Error error{};
-    try { defaultCollection.purgeDocument(doc); } catch (const cbl::Error& e) { error = e; }
-    CHECK(error.code == kCBLErrorNotFound);
+    CBLError error{};
+    try { defaultCollection.purgeDocument(doc); } catch (const cbl::Error& e) { error = asCBLError(e); }
+    CheckError(error, kCBLErrorNotFound);
 
     CHECK(!defaultCollection.purgeDocument("foo"));
 }

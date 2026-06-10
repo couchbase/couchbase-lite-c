@@ -106,6 +106,8 @@ namespace cbl {
         {}
         Error()
         : std::runtime_error("")
+        , domain(kCBLDomain)
+        , code(0)
         {}
         Error& operator=(const Error& other) {
             std::runtime_error::operator=(other);
@@ -157,7 +159,7 @@ public: \
     /** A token representing a registered listener; instances are returned from the various
         methods that register listeners, such as \ref Database::addListener.
         When this object goes out of scope, the listener will be unregistered.
-        @note ListenerToken is now allowed to copy. */
+        @note ListenerToken is not allowed to copy. */
     template <class... Args>
     class ListenerToken {
     public:

@@ -56,8 +56,19 @@ namespace cbl {
             CBLPredictiveModel config{};
             config.context      = holder;
             config.prediction   = [](void* ctx, FLDict input) -> FLMutableDict {
-                auto& fn = *static_cast<PredictiveModel*>(ctx);
-                return FLMutableDict_Retain((FLMutableDict)fn(fleece::Dict(input)));
+                try {
+                    auto& fn = *static_cast<PredictiveModel*>(ctx);
+                    return FLMutableDict_Retain((FLMutableDict)fn(fleece::Dict(input)));
+                } catch (const cbl::Error& error) {
+                    CBL_Log(kCBLLogDomainDatabase, kCBLLogError, "Prediction function throws error %d/%d: %s",
+                            error.domain, error.code, error.what());
+                } catch (const std::exception& error) {
+                    CBL_Log(kCBLLogDomainDatabase, kCBLLogError, "Prediction function throws error %s",
+                            error.what());
+                } catch (...) {
+                    CBL_Log(kCBLLogDomainDatabase, kCBLLogError, "Prediction function throws unknown exception");
+                }
+                return FLMutableDict_New();
             };
             config.unregistered = [](void* ctx) {
                 delete static_cast<PredictiveModel*>(ctx);
