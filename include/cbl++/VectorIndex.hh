@@ -161,6 +161,10 @@ namespace cbl {
             the number of centroids. */
         unsigned numProbes = 0;
 
+    protected:
+        friend Collection;
+
+    private:
         /** Builds a transient CBLVectorIndexConfiguration referencing this object's data
             and passes it to `f`. The C config is only valid while `f` is executing. */
         template <typename F>
@@ -177,10 +181,6 @@ namespace cbl {
             return std::forward<F>(f)(cConfig);
         }
 
-    protected:
-        friend Collection;
-
-    private:
         QueryLanguage _exprLang;
         std::string   _expr;
         unsigned      _dimensions;

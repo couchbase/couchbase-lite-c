@@ -29,7 +29,7 @@ public:
     }
     
     ~LogTest_Cpp() {
-        LogSinks::setFile({ LogLevel(kCBLLogNone) });
+        LogSinks::setFile({});
         LogSinks::setCustom({});
         LogSinks::setConsole(_backupConsoleLogSink);
     }
@@ -48,12 +48,12 @@ TEST_CASE_METHOD(LogTest_Cpp, "Default Log Sink Cpp", "[Log]") {
     CHECK(custom.callback == nullptr);
     
     FileLogSink logSink = LogSinks::file();
-    CHECK(logSink.level == LogLevel::None);
+    CHECK(logSink.level == kCBLLogNone);
     CHECK(logSink.directory.empty());
 }
 
 TEST_CASE_METHOD(LogTest_Cpp, "Console Log Sink Cpp: Set and Get", "[Log]") {
-    LogSinks::setConsole({LogLevel::Verbose, kCBLLogDomainMaskAll});
+    LogSinks::setConsole({kCBLLogVerbose, kCBLLogDomainMaskAll});
     CBLConsoleLogSink logSink = LogSinks::console();
     CHECK(logSink.level == kCBLLogVerbose);
     CHECK(logSink.domains == kCBLLogDomainMaskAll);
@@ -61,7 +61,7 @@ TEST_CASE_METHOD(LogTest_Cpp, "Console Log Sink Cpp: Set and Get", "[Log]") {
 
 TEST_CASE_METHOD(LogTest_Cpp, "Custom Log Sink Cpp: Set and Get", "[Log]") {
     CBLLogSinkCallback callback = [](CBLLogDomain domain, CBLLogLevel level, FLString msg) { };
-    LogSinks::setCustom({ LogLevel::Verbose, callback, kCBLLogDomainMaskAll});
+    LogSinks::setCustom({ kCBLLogVerbose, callback, kCBLLogDomainMaskAll});
     CBLCustomLogSink logSink = LogSinks::custom();
     CHECK(logSink.level == kCBLLogVerbose);
     CHECK(logSink.domains == kCBLLogDomainMaskAll);
