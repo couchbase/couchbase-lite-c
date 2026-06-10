@@ -44,12 +44,22 @@ public:
     static CBLFileLogSink fileLogSink(void);
     
     static void log(CBLLogDomain domain, CBLLogLevel level, const char *msg);
-    
+
+    // Temporarily until removing the old logging API
+    enum class LogAPIStyle {
+        none,
+        oldStyle,
+        newStyle,
+    };
+    static void validateAPIUsage(LogAPIStyle usage);
+
     // For testing purpose
     static void reset(void);
     static void logWithC4Log(CBLLogDomain domain, CBLLogLevel level, const char *msg);
-    
+
 private:
+    static std::atomic<LogAPIStyle> _sAPIStyle;
+
     static CBLLogLevel _sDomainsLogLevel;
     static CBLLogLevel _sCallbackLogLevel;
     

@@ -225,6 +225,14 @@ _CBLDatabase_GetDocumentExpiration
 _CBLDatabase_SetDocumentExpiration
 _CBL_Log
 _CBL_LogMessage
+_CBLLog_Callback
+_CBLLog_SetCallback
+_CBLLog_CallbackLevel
+_CBLLog_SetCallbackLevel
+_CBLLog_ConsoleLevel
+_CBLLog_SetConsoleLevel
+_CBLLog_FileConfig
+_CBLLog_SetFileConfig
 _CBLLogSinks_SetConsole
 _CBLLogSinks_Console
 _CBLLogSinks_SetCustom

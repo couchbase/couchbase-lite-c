@@ -245,6 +245,140 @@ private:
     }
 };
 
+TEST_CASE_METHOD(LogTest, "Legacy - Console Logging : Log Level", "[Log]") {
+    for (CBLLogLevel level : kLogLevels) {
+        CBLLog_SetConsoleLevel(level);
+        CHECK(CBLLog_ConsoleLevel() == level);
+    }
+}
+
+TEST_CASE_METHOD(LogTest, "Legacy - File Logging : Config", "[Log]") {
+    CBLLogFileConfiguration config = {};
+    config.directory = slice(logDir());
+    config.level = kCBLLogVerbose;
+    config.maxRotateCount = 5;
+    config.maxSize = 10;
+    config.usePlaintext = true;
+    
+    CBLError error;
+    CHECK(CBLLog_SetFileConfig(config, &error));
+    
+    auto config2 = CBLLog_FileConfig();
+    CHECK(config2->level == config.level);
+    CHECK(config2->directory == config.directory);
+    CHECK(config2->maxRotateCount == config.maxRotateCount);
+    CHECK(config2->maxSize == config.maxSize);
+    CHECK(config2->usePlaintext == config.usePlaintext);
+}
+
+TEST_CASE_METHOD(LogTest, "Legacy - File Logging : Set Log Level", "[Log]") {
+    CBLLogFileConfiguration config {};
+    config.directory = slice(logDir());
+    config.usePlaintext = true;
+    
+    // Set setting different log levels:
+    for (CBLLogLevel level : kLogLevels) {
+        // Set log level:
+        config.level = level;
+        
+        CBLError error {};
+        CHECK(CBLLog_SetFileConfig(config, &error));
+        
+        // Write messages on each log level:
+        writeLogs();
+    }
+    
+    // Verify:
+    int lineCount = 2; // 2 header lines
+    for (CBLLogLevel level : kLogLevels) {
+        if (level == kCBLLogNone)
+            continue;
+        
+        vector<string> lines = readLogFile(level);
+        CHECK(lines.size() == ++lineCount);
+    }
+}
+
+TEST_CASE_METHOD(LogTest, "Legacy - File Logging : Max Size and MaxRotateCount", "[Log]") {
+    CBLLogFileConfiguration config {};
+    config.directory = slice(logDir());
+    config.maxSize = 1024;
+    config.maxRotateCount = 2;
+    config.usePlaintext = true;
+    CBLError error {};
+    CHECK(CBLLog_SetFileConfig(config, &error));
+    
+    // Note: Each log file has ~320 bytes for the header
+    for (int i = 0; i < 100; i++) {
+        // Workaround for CBL-6291:
+        if (i % 10 == 0) this_thread::sleep_for(100ms);
+        writeC4Log(kCBLLogDomainDatabase, kCBLLogInfo, "ZZZZZZZZZZZZZZZZZZZZ : " + std::to_string(i)); // ~60 bytes
+    }
+    
+    auto paths = getAllLogFilePaths(kCBLLogInfo);
+    CHECK(paths.size() == config.maxRotateCount + 1);
+}
+
+TEST_CASE_METHOD(LogTest, "Legacy - File Logging : Binary Format", "[Log]") {
+    CBLLogFileConfiguration config {};
+    config.directory = slice(logDir());
+    config.usePlaintext = false;
+    CBLError error {};
+    CHECK(CBLLog_SetFileConfig(config, &error));
+    
+    writeLog(kCBLLogDomainDatabase, kCBLLogInfo, "message");
+    
+    auto filePaths = getAllLogFilePaths(kCBLLogInfo);
+    REQUIRE(filePaths.size() == 1);
+    
+    std::vector<unsigned char> targetBytes = { 0xcf, 0xb2, 0xab, 0x1b };
+    std::fstream file(filePaths[0], std::ios_base::in | std::ios_base::binary);
+    std::vector<unsigned char> bytes(4);
+    file.read(reinterpret_cast<char*>(bytes.data()), targetBytes.size());
+    file.close();
+    CHECK(bytes == targetBytes);
+}
+
+
+TEST_CASE_METHOD(LogTest, "Legacy - Custom Logging", "[Log]") {
+    // Set log callback:
+    static vector<CBLLogLevel>recs;
+    CBLLog_SetCallback([](CBLLogDomain domain, CBLLogLevel level, FLString msg) {
+        CHECK(level >= CBLLog_CallbackLevel());
+        CHECK(string(msg).find(kLogLevelNames[level]) == 0);
+        recs.push_back(level);
+    });
+    
+    // Set setting different log levels:
+    for (CBLLogLevel callbackLevel : kLogLevels) {
+        // Set log level:
+        CBLLog_SetCallbackLevel(callbackLevel);
+        CHECK(CBLLog_CallbackLevel() == callbackLevel);
+        
+        // Write messages on each log level:
+        recs.clear();
+        writeLogs();
+        
+        // Verify:
+        for (CBLLogLevel level : kLogLevels) {
+            if (level == kCBLLogNone)
+                continue;
+            if (level >= callbackLevel)
+                CHECK(find(recs.begin(), recs.end(), level) != recs.end());
+            else
+                CHECK(find(recs.begin(), recs.end(), level) == recs.end());
+        }
+    }
+    
+    // Reset log callback:
+    CBLLog_SetCallbackLevel(kCBLLogDebug);
+    CBLLog_SetCallback(nullptr);
+    REQUIRE(CBLLog_Callback() == nullptr);
+    recs.clear();
+    writeLogs();
+    CHECK(recs.empty());
+    CBLLog_SetCallbackLevel(kCBLLogNone);
+}
 
 TEST_CASE_METHOD(LogTest, "Log Message", "[Log]") {
     static vector<string>recs;
