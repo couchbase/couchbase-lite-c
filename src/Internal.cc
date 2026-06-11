@@ -31,14 +31,6 @@ using namespace fleece;
 
 namespace cbl_internal {
 
-    // Initializer that is called once when the library (sCBLInitializer) is loaded:
-    struct CBLInitializer {
-    public:
-        CBLInitializer () {
-            c4log_enableFatalExceptionBacktrace();
-        }
-    } sCBLInitializer;
-
     void BridgeException(const char *fnName, CBLError *outError) noexcept {
         C4Error error = C4Error::fromCurrentException();
         if (outError)
