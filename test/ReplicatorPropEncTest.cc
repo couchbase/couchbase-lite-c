@@ -92,6 +92,41 @@ public:
         }
     }
     
+    /** Use the legacy database config instead of collections. */
+    void useLegacyDatabaseConfig() {
+        config.database = db.ref();
+        config.collections = nullptr;
+        config.collectionCount = 0;
+    }
+
+    void setupLegacyEncryptionCallback(bool encryptor = true, bool decryptor = true) {
+        if (encryptor) {
+            config.propertyEncryptor = [](void* context,
+                                          FLString docID,
+                                          FLDict props,
+                                          FLString path,
+                                          FLSlice input,
+                                          FLStringResult* alg,
+                                          FLStringResult* kid,
+                                          CBLError* error) -> FLSliceResult {
+                return ((ReplicatorPropertyEncryptionTest*)context) -> encrypt(context, docID, props, path, input, alg, kid, error);
+            };
+        }
+
+        if (decryptor) {
+            config.propertyDecryptor = [](void* context,
+                                          FLString docID,
+                                          FLDict props,
+                                          FLString path,
+                                          FLSlice input,
+                                          FLString alg,
+                                          FLString kid,
+                                          CBLError* error) -> FLSliceResult {
+                return ((ReplicatorPropertyEncryptionTest*)context) -> decrypt(context, docID, props, path, input, alg, kid, error);
+            };
+        }
+    }
+
     FLSliceResult encrypt(void* context, FLString documentID, FLDict properties, FLString keyPath,
                           FLSlice input, FLStringResult* alg, FLStringResult* kid, CBLError* error)
     {
@@ -401,6 +436,46 @@ TEST_CASE_METHOD(ReplicatorPropertyEncryptionTest, "Unsupport : Encryptables in 
     CBLEncryptable_Release(enc2);
     FLMutableArray_Release(array);
     FLMutableArray_Release(outerArray);
+}
+
+TEST_CASE_METHOD(ReplicatorPropertyEncryptionTest, "Legacy - Encrypt and decrypt one property", "[Replicator][Encryptable]") {
+    {
+        auto doc = CBLDocument_CreateWithID("doc1"_sl);
+        FLMutableDict props = CBLDocument_MutableProperties(doc);
+
+        auto secret = CBLEncryptable_CreateWithString("Secret 1"_sl);
+        FLMutableDict_SetEncryptableValue(props, "secret1"_sl, secret);
+
+        CBLError error;
+        CHECK(CBLCollection_SaveDocument(defaultCollection.ref(), doc, &error));
+
+        CBLDocument_Release(doc);
+        CBLEncryptable_Release(secret);
+
+        config.replicatorType = kCBLReplicatorTypePushAndPull;
+        useLegacyDatabaseConfig();
+        setupLegacyEncryptionCallback();
+        replicate();
+
+        doc = CBLCollection_GetMutableDocument(otherDBDefaultCol.ref(), "doc1"_sl, &error);
+        CHECK(Dict(CBLDocument_Properties(doc)).toJSON(false, true) ==
+              "{\"encrypted$secret1\":{\"alg\":\"CB_MOBILE_CUSTOM\",\"ciphertext\":\"aRguKDkuP2t6aQ==\"}}");
+        CHECK(encryptCount == 1);
+        CBLDocument_Release(doc);
+    }
+
+    {
+        reset();
+        useLegacyDatabaseConfig();
+        replicate();
+
+        CBLError error;
+        auto doc = CBLCollection_GetMutableDocument(defaultCollection.ref(), "doc1"_sl, &error);
+        CHECK(Dict(CBLDocument_Properties(doc)).toJSON(false, true) ==
+              "{\"secret1\":{\"@type\":\"encryptable\",\"value\":\"Secret 1\"}}");
+        CHECK(decryptCount == 1);
+        CBLDocument_Release(doc);
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorPropertyEncryptionTest, "Encrypt and decrypt one property", "[Replicator][Encryptable]") {
@@ -921,7 +996,7 @@ TEST_CASE_METHOD(ReplicatorPropertyEncryptionTest, "Encrypt and decrypt with mul
                                                                        input, alg, kid, error);
     };
     
-    vector<CBLCollectionConfiguration> colConfigs = collectionConfigs( {c1x, c2x });
+    vector<CBLReplicationCollection> colConfigs = collectionConfigs( {c1x, c2x });
     config.collections = colConfigs.data();
     config.collectionCount = colConfigs.size();
     

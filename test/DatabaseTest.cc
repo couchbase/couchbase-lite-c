@@ -29,6 +29,69 @@ using namespace fleece;
 
 static constexpr const slice kOtherDBName = "CBLTest_OtherDB";
 
+static int dbListenerCalls = 0;
+static int fooListenerCalls = 0;
+static int barListenerCalls = 0;
+static int notificationsReadyCalls = 0;
+static mutex _sListenerMutex;
+
+static void notificationsReady(void *context, CBLDatabase* db) {
+    lock_guard<mutex> lock(_sListenerMutex);
+    
+    ++notificationsReadyCalls;
+    auto test = (CBLTest*)context;
+    CHECK(test->db == db);
+}
+
+static void dbListener(void *context, const CBLDatabase *db, unsigned nDocs, FLString *docIDs) {
+    lock_guard<mutex> lock(_sListenerMutex);
+    
+    ++dbListenerCalls;
+    auto test = (CBLTest*)context;
+    CHECK(test->db == db);
+    CHECK(nDocs == 1);
+    CHECK(slice(docIDs[0]) == "foo"_sl);
+}
+
+static void dbListenerForBufferNotification(void *context, const CBLDatabase *db, unsigned nDocs, FLString *docIDs) {
+    lock_guard<mutex> lock(_sListenerMutex);
+    
+    ++dbListenerCalls;
+    auto test = (CBLTest*)context;
+    CHECK(test->db == db);
+    CHECK(nDocs == 2);
+    CHECK(docIDs[0] == "foo"_sl);
+    CHECK(docIDs[1] == "bar"_sl);
+}
+
+static void dbListenerWithDelay(void *context, const CBLDatabase *db, unsigned nDocs, FLString *docIDs) {
+     lock_guard<mutex> lock(_sListenerMutex);
+
+     this_thread::sleep_for(1000ms);
+
+     ++dbListenerCalls;
+     auto test = (CBLTest*)context;
+     CHECK(test->db == db);
+}
+
+static void fooListener(void *context, const CBLDatabase *db, FLString docID) {
+    lock_guard<mutex> lock(_sListenerMutex);
+    
+    ++fooListenerCalls;
+    auto test = (CBLTest*)context;
+    CHECK(test->db == db);
+    CHECK(slice(docID) == "foo"_sl);
+}
+
+static void barListener(void *context, const CBLDatabase *db, FLString docID) {
+    lock_guard<mutex> lock(_sListenerMutex);
+    
+    ++barListenerCalls;
+    auto test = (CBLTest*)context;
+    CHECK(test->db == db);
+    CHECK(docID == "bar"_sl);
+}
+
 class DatabaseTest : public CBLTest {
 public:
     CBLDatabase* otherDB = nullptr;
@@ -160,6 +223,14 @@ public:
         error = {};
         CHECK(!CBLCollection_GetIndexNames(defaultCollection, &error));
         CheckNotOpenError(error);
+        
+        auto token = CBLDatabase_AddChangeListener(db, dbListener, this);
+        CHECK(token);
+        CBLListener_Remove(token);
+        
+        auto docToken = CBLDatabase_AddDocumentChangeListener(db, "foo"_sl, fooListener, this);
+        CHECK(docToken);
+        CBLListener_Remove(docToken);
         
         CBLDocument_Release(doc);
     }
@@ -600,6 +671,128 @@ TEST_CASE_METHOD(DatabaseTest, "Transaction Abort") {
     CBLDocument_Release(doc2);
 }
 
+
+#pragma mark - LISTENERS:
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Database notifications") {
+    // Add a listener:
+    dbListenerCalls = fooListenerCalls = 0;
+    auto token = CBLDatabase_AddChangeListener(db, dbListener, this);
+    auto docToken = CBLDatabase_AddDocumentChangeListener(db, "foo"_sl, fooListener, this);
+
+    // Create a doc, check that the listener was called:
+    createDocWithPair(db, "foo", "greeting", "Howdy!");
+    CHECK(dbListenerCalls == 1);
+    CHECK(fooListenerCalls == 1);
+
+    CBLListener_Remove(token);
+    CBLListener_Remove(docToken);
+
+    // After being removed, the listener should not be called:
+    dbListenerCalls = fooListenerCalls = 0;
+    createDocWithPair(db, "bar", "greeting", "yo.");
+    CHECK(dbListenerCalls == 0);
+    CHECK(fooListenerCalls == 0);
+}
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Remove Database Listener after releasing database") {
+    // Add a listener:
+    dbListenerCalls = fooListenerCalls = 0;
+    auto token = CBLDatabase_AddChangeListener(db, dbListener, this);
+    auto docToken = CBLDatabase_AddDocumentChangeListener(db, "foo"_sl, fooListener, this);
+
+    // Create a doc, check that the listener was called:
+    createDocWithPair(db, "foo", "greeting", "Howdy!");
+    CHECK(dbListenerCalls == 1);
+    CHECK(fooListenerCalls == 1);
+
+    // Close and release the database:
+    CBLError error;
+    if (!CBLDatabase_Close(db, &error))
+        WARN("Failed to close database: " << error.domain << "/" << error.code);
+    CBLDatabase_Release(db);
+    db = nullptr;
+
+    // Remove and release the token:
+    ExpectingExceptions x;
+    CBLListener_Remove(token);
+    CBLListener_Remove(docToken);
+}
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Scheduled database notifications") {
+    // Add a listener:
+    dbListenerCalls = fooListenerCalls = barListenerCalls = 0;
+
+    auto token = CBLDatabase_AddChangeListener(db, dbListenerForBufferNotification, this);
+    auto fooToken = CBLDatabase_AddDocumentChangeListener(db, "foo"_sl, fooListener, this);
+    auto barToken = CBLDatabase_AddDocumentChangeListener(db, "bar"_sl, barListener, this);
+
+    CBLDatabase_BufferNotifications(db, notificationsReady, this);
+
+    // Create two docs; no listeners should be called yet:
+    createDocWithPair(db, "foo", "greeting", "Howdy!");
+    CHECK(notificationsReadyCalls == 1);
+    CHECK(dbListenerCalls == 0);
+    CHECK(fooListenerCalls == 0);
+    CHECK(barListenerCalls == 0);
+
+    createDocWithPair(db, "bar", "greeting", "yo.");
+    CHECK(notificationsReadyCalls == 1);
+    CHECK(dbListenerCalls == 0);
+    CHECK(fooListenerCalls == 0);
+    CHECK(barListenerCalls == 0);
+
+    // Now the listeners will be called:
+    CBLDatabase_SendNotifications(db);
+    CHECK(dbListenerCalls == 1);
+    CHECK(fooListenerCalls == 1);
+    CHECK(barListenerCalls == 1);
+
+    // There should be no more notifications:
+    CBLDatabase_SendNotifications(db);
+    CHECK(dbListenerCalls == 1);
+    CHECK(fooListenerCalls == 1);
+    CHECK(barListenerCalls == 1);
+
+    CBLListener_Remove(token);
+    CBLListener_Remove(fooToken);
+    CBLListener_Remove(barToken);
+}
+
+// CBSE-16738
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Database change notifications from different db threads") {
+    CBLError error {};
+    auto config = databaseConfig();
+    auto anotherDB = CBLDatabase_Open(kDatabaseName, &config, &error);
+    REQUIRE(anotherDB);
+    
+    // Add a listener:
+    dbListenerCalls = fooListenerCalls = 0;
+    auto token = CBLDatabase_AddChangeListener(db, dbListenerWithDelay, this);
+    
+    auto createDoc = [&] (CBLDatabase* database)
+    {
+        CBLError error {};
+        CBLDocument* doc = CBLDocument_CreateWithID("foo"_sl);
+        MutableDict props = CBLDocument_MutableProperties(doc);
+        props["greeting"] = "hello";
+        CBLDatabase_SaveDocument(database, doc, &error);
+        CBLDocument_Release(doc);
+    };
+    
+    thread t1([&]() { createDoc(db); });
+    thread t2([=]() { createDoc(anotherDB); });
+    
+    t1.join();
+    t2.join();
+    
+    CHECK(dbListenerCalls == 2);
+    CBLListener_Remove(token);
+    
+    CBLDatabase_Close(anotherDB, &error);
+    CBLDatabase_Release(anotherDB);
+}
+
 #pragma mark - BLOBS:
 
 TEST_CASE_METHOD(DatabaseTest, "Save blob read from database", "[Blob]") {
@@ -694,7 +887,7 @@ TEST_CASE_METHOD(DatabaseTest, "Close Database with Active Replicator") {
     
     // Start Replicator:
     auto endpoint = CBLEndpoint_CreateWithLocalDB(otherDB);
-    std::vector<CBLCollectionConfiguration> colConfigs = { { defaultCollection } };
+    std::vector<CBLReplicationCollection> colConfigs = { { defaultCollection } };
     
     CBLReplicatorConfiguration config = {};
     config.collections = colConfigs.data();
@@ -731,7 +924,7 @@ TEST_CASE_METHOD(DatabaseTest, "Delete Database with Active Replicator") {
     
     // Start Replicator:
     auto endpoint = CBLEndpoint_CreateWithLocalDB(otherDB);
-    std::vector<CBLCollectionConfiguration> colConfigs = { { defaultCollection } };
+    std::vector<CBLReplicationCollection> colConfigs = { { defaultCollection } };
     
     CBLReplicatorConfiguration config = {};
     config.collections = colConfigs.data();
@@ -831,6 +1024,199 @@ TEST_CASE_METHOD(DatabaseTest, "Use Closed Database") {
 TEST_CASE_METHOD(DatabaseTest, "Use Deleted Database") {
     CBLError error = {};
     CHECK(CBLDatabase_Delete(db, &error));
-    
+
     testInvalidDatabase();
+}
+
+#pragma mark - LEGACY DATABASE API:
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Database Count") {
+    CHECK(CBLDatabase_Count(db) == 0);
+
+    createDocWithPair(db, "doc1", "greeting", "Howdy!");
+    CHECK(CBLDatabase_Count(db) == 1);
+
+    CBLError error;
+    REQUIRE(CBLDatabase_PurgeDocumentByID(db, "doc1"_sl, &error));
+    CHECK(CBLDatabase_Count(db) == 0);
+}
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Get and Save Document") {
+    CBLError error;
+    CHECK(!CBLDatabase_GetDocument(db, "doc1"_sl, &error));
+    CHECK(error.code == 0);
+
+    CBLDocument* doc = CBLDocument_CreateWithID("doc1"_sl);
+    FLMutableDict props = CBLDocument_MutableProperties(doc);
+    FLMutableDict_SetString(props, "greeting"_sl, "Howdy!"_sl);
+    REQUIRE(CBLDatabase_SaveDocument(db, doc, &error));
+    CBLDocument_Release(doc);
+
+    const CBLDocument* readDoc = CBLDatabase_GetDocument(db, "doc1"_sl, &error);
+    REQUIRE(readDoc);
+    CHECK(CBLDocument_Sequence(readDoc) == 1);
+    CHECK(Dict(CBLDocument_Properties(readDoc)).toJSONString() == "{\"greeting\":\"Howdy!\"}");
+    CBLDocument_Release(readDoc);
+
+    CBLDocument* mDoc = CBLDatabase_GetMutableDocument(db, "doc1"_sl, &error);
+    REQUIRE(mDoc);
+    props = CBLDocument_MutableProperties(mDoc);
+    FLMutableDict_SetString(props, "greeting"_sl, "Hello"_sl);
+    REQUIRE(CBLDatabase_SaveDocument(db, mDoc, &error));
+    CHECK(CBLDocument_Sequence(mDoc) == 2);
+    CBLDocument_Release(mDoc);
+}
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Save Document with Concurrency Control") {
+    createDocWithPair(db, "doc1", "greeting", "Howdy!");
+
+    CBLError error;
+    CBLDocument* doc1 = CBLDatabase_GetMutableDocument(db, "doc1"_sl, &error);
+    REQUIRE(doc1);
+    CBLDocument* doc2 = CBLDatabase_GetMutableDocument(db, "doc1"_sl, &error);
+    REQUIRE(doc2);
+
+    FLMutableDict_SetString(CBLDocument_MutableProperties(doc1), "greeting"_sl, "Hello"_sl);
+    REQUIRE(CBLDatabase_SaveDocument(db, doc1, &error));
+    CBLDocument_Release(doc1);
+
+    // Save on top of the newer revision with fail on conflict should fail:
+    FLMutableDict_SetString(CBLDocument_MutableProperties(doc2), "greeting"_sl, "Hi"_sl);
+    CHECK(!CBLDatabase_SaveDocumentWithConcurrencyControl(db, doc2, kCBLConcurrencyControlFailOnConflict, &error));
+    CHECK(error.code == kCBLErrorConflict);
+
+    // Save with last write wins should succeed:
+    REQUIRE(CBLDatabase_SaveDocumentWithConcurrencyControl(db, doc2, kCBLConcurrencyControlLastWriteWins, &error));
+    CBLDocument_Release(doc2);
+
+    const CBLDocument* readDoc = CBLDatabase_GetDocument(db, "doc1"_sl, &error);
+    REQUIRE(readDoc);
+    CHECK(Dict(CBLDocument_Properties(readDoc)).toJSONString() == "{\"greeting\":\"Hi\"}");
+    CBLDocument_Release(readDoc);
+}
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Save Document with Conflict Handler") {
+    createDocWithPair(db, "doc1", "greeting", "Howdy!");
+
+    CBLError error;
+    CBLDocument* doc1 = CBLDatabase_GetMutableDocument(db, "doc1"_sl, &error);
+    REQUIRE(doc1);
+    CBLDocument* doc2 = CBLDatabase_GetMutableDocument(db, "doc1"_sl, &error);
+    REQUIRE(doc2);
+
+    FLMutableDict_SetString(CBLDocument_MutableProperties(doc1), "greeting"_sl, "Hello"_sl);
+    REQUIRE(CBLDatabase_SaveDocument(db, doc1, &error));
+    CBLDocument_Release(doc1);
+
+    int conflictHandlerCalls = 0;
+    FLMutableDict_SetString(CBLDocument_MutableProperties(doc2), "greeting"_sl, "Hi"_sl);
+
+    SECTION("Abort the save") {
+        auto handler = [](void* context, CBLDocument* docBeingSaved, const CBLDocument* conflictingDoc) -> bool {
+            ++(*(int*)context);
+            return false;
+        };
+        CHECK(!CBLDatabase_SaveDocumentWithConflictHandler(db, doc2, handler, &conflictHandlerCalls, &error));
+        CHECK(error.code == kCBLErrorConflict);
+        CHECK(conflictHandlerCalls == 1);
+
+        const CBLDocument* readDoc = CBLDatabase_GetDocument(db, "doc1"_sl, &error);
+        REQUIRE(readDoc);
+        CHECK(Dict(CBLDocument_Properties(readDoc)).toJSONString() == "{\"greeting\":\"Hello\"}");
+        CBLDocument_Release(readDoc);
+    }
+
+    SECTION("Resolve and save") {
+        auto handler = [](void* context, CBLDocument* docBeingSaved, const CBLDocument* conflictingDoc) -> bool {
+            ++(*(int*)context);
+            return true;
+        };
+        REQUIRE(CBLDatabase_SaveDocumentWithConflictHandler(db, doc2, handler, &conflictHandlerCalls, &error));
+        CHECK(conflictHandlerCalls == 1);
+
+        const CBLDocument* readDoc = CBLDatabase_GetDocument(db, "doc1"_sl, &error);
+        REQUIRE(readDoc);
+        CHECK(Dict(CBLDocument_Properties(readDoc)).toJSONString() == "{\"greeting\":\"Hi\"}");
+        CBLDocument_Release(readDoc);
+    }
+
+    CBLDocument_Release(doc2);
+}
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Delete and Purge Document") {
+    createDocWithPair(db, "doc1", "greeting", "Howdy!");
+    createDocWithPair(db, "doc2", "greeting", "Hello");
+    createDocWithPair(db, "doc3", "greeting", "Hi");
+    createDocWithPair(db, "doc4", "greeting", "Hey");
+    CHECK(CBLDatabase_Count(db) == 4);
+
+    CBLError error;
+    const CBLDocument* doc1 = CBLDatabase_GetDocument(db, "doc1"_sl, &error);
+    REQUIRE(doc1);
+    REQUIRE(CBLDatabase_DeleteDocument(db, doc1, &error));
+    CBLDocument_Release(doc1);
+    CHECK(CBLDatabase_Count(db) == 3);
+    CHECK(!CBLDatabase_GetDocument(db, "doc1"_sl, &error));
+
+    const CBLDocument* doc2 = CBLDatabase_GetDocument(db, "doc2"_sl, &error);
+    REQUIRE(doc2);
+    REQUIRE(CBLDatabase_DeleteDocumentWithConcurrencyControl(db, doc2, kCBLConcurrencyControlLastWriteWins, &error));
+    CBLDocument_Release(doc2);
+    CHECK(CBLDatabase_Count(db) == 2);
+
+    const CBLDocument* doc3 = CBLDatabase_GetDocument(db, "doc3"_sl, &error);
+    REQUIRE(doc3);
+    REQUIRE(CBLDatabase_PurgeDocument(db, doc3, &error));
+    CBLDocument_Release(doc3);
+    CHECK(CBLDatabase_Count(db) == 1);
+
+    // Private API:
+    REQUIRE(CBLDatabase_DeleteDocumentByID(db, "doc4"_sl, &error));
+    CHECK(CBLDatabase_Count(db) == 0);
+}
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Document Expiration") {
+    createDocWithPair(db, "doc1", "greeting", "Howdy!");
+    createDocWithPair(db, "doc2", "greeting", "Hello");
+
+    CBLError error {};
+    CHECK(CBLDatabase_GetDocumentExpiration(db, "doc1"_sl, &error) == 0);
+
+    CBLTimestamp future = CBL_Now() + 60000;
+    REQUIRE(CBLDatabase_SetDocumentExpiration(db, "doc1"_sl, future, &error));
+    CHECK(CBLDatabase_GetDocumentExpiration(db, "doc1"_sl, &error) == future);
+    CHECK(CBLDatabase_GetDocumentExpiration(db, "doc2"_sl, &error) == 0);
+
+    // Clear expiration:
+    REQUIRE(CBLDatabase_SetDocumentExpiration(db, "doc1"_sl, 0, &error));
+    CHECK(CBLDatabase_GetDocumentExpiration(db, "doc1"_sl, &error) == 0);
+}
+
+TEST_CASE_METHOD(DatabaseTest, "Legacy - Index Management") {
+    CBLError error;
+
+    CBLValueIndexConfiguration index1 = {};
+    index1.expressionLanguage = kCBLN1QLLanguage;
+    index1.expressions = "name.first"_sl;
+    REQUIRE(CBLDatabase_CreateValueIndex(db, "index1"_sl, index1, &error));
+
+    CBLFullTextIndexConfiguration index2 = {};
+    index2.expressionLanguage = kCBLN1QLLanguage;
+    index2.expressions = "product.description"_sl;
+    index2.ignoreAccents = true;
+    REQUIRE(CBLDatabase_CreateFullTextIndex(db, "index2"_sl, index2, &error));
+
+    FLArray indexNames = CBLDatabase_GetIndexNames(db);
+    REQUIRE(indexNames);
+    CHECK(FLArray_Count(indexNames) == 2);
+    CHECK(Array(indexNames).toJSONString() == R"(["index1","index2"])");
+    FLArray_Release(indexNames);
+
+    REQUIRE(CBLDatabase_DeleteIndex(db, "index1"_sl, &error));
+
+    indexNames = CBLDatabase_GetIndexNames(db);
+    REQUIRE(indexNames);
+    CHECK(FLArray_Count(indexNames) == 1);
+    CHECK(Array(indexNames).toJSONString() == R"(["index2"])");
+    FLArray_Release(indexNames);
 }

@@ -41,9 +41,6 @@ CBL_CAPI_BEGIN
 /** [false] Full sync is off by default because the performance hit is seldom worth the benefit */
 CBL_PUBLIC extern const bool kCBLDefaultDatabaseFullSync;
 
-/** [false] Memory mapped database files are enabled by default */
-CBL_PUBLIC extern const bool kCBLDefaultDatabaseMmapDisabled;
-
 /** @} */
 
 /** \name CBLLogFileConfiguration
@@ -52,6 +49,10 @@ CBL_PUBLIC extern const bool kCBLDefaultDatabaseMmapDisabled;
 
 /** [false] Plaintext is not used, and instead binary encoding is used in log files */
 CBL_PUBLIC extern const bool kCBLDefaultLogFileUsePlaintext;
+
+/** [false] Plaintext is not used, and instead binary encoding is used in log files
+    @warning <b>Deprecated :</b> Use kCBLDefaultLogFileUsePlaintext instead. */
+CBL_PUBLIC extern const bool kCBLDefaultLogFileUsePlainText;
 
 /** [524288] 512 KiB for the size of a log file */
 CBL_PUBLIC extern const size_t kCBLDefaultLogFileMaxSize;
@@ -106,6 +107,10 @@ CBL_PUBLIC extern const unsigned kCBLDefaultReplicatorMaxAttemptsContinuous;
 
 /** [300] Max wait time between retry attempts in seconds */
 CBL_PUBLIC extern const unsigned kCBLDefaultReplicatorMaxAttemptsWaitTime;
+
+/** [300] Max wait time between retry attempts in seconds 
+    @warning <b>Deprecated :</b> Use kCBLDefaultReplicatorMaxAttemptsWaitTime instead. */
+CBL_PUBLIC extern const unsigned kCBLDefaultReplicatorMaxAttemptWaitTime;
 
 /** [false] Purge documents when a user loses access */
 CBL_PUBLIC extern const bool kCBLDefaultReplicatorDisableAutoPurge;

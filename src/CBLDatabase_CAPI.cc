@@ -140,6 +140,13 @@ const CBLDatabaseConfiguration CBLDatabase_Config(const CBLDatabase* db) noexcep
     return db->config();
 }
 
+uint64_t CBLDatabase_Count(const CBLDatabase* db) noexcept {
+    try {
+        auto col = const_cast<CBLDatabase*>(db)->getInternalDefaultCollection();
+        return col->count();
+    } catchAndWarn();
+}
+
 /** Private API */
 uint64_t CBLDatabase_LastSequence(const CBLDatabase* db) noexcept {
     try {
@@ -155,9 +162,242 @@ FLSliceResult CBLDatabase_PublicUUID(const CBLDatabase* db) noexcept {
     } catchAndWarn()
 }
 
+#pragma mark - DOCUMENTS:
 
-#pragma mark - NOTIFICATION
 
+const CBLDocument* CBLDatabase_GetDocument(const CBLDatabase* db, FLString docID,
+                                           CBLError* outError) noexcept
+{
+    try {
+        auto col = const_cast<CBLDatabase*>(db)->getInternalDefaultCollection();
+        return CBLCollection_GetDocument(col, docID, outError);
+    } catchAndBridge(outError)
+}
+
+
+CBLDocument* CBLDatabase_GetMutableDocument(CBLDatabase* db, FLString docID,
+                                            CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_GetMutableDocument(col, docID, outError);
+    } catchAndBridge(outError)
+}
+
+
+bool CBLDatabase_SaveDocument(CBLDatabase* db,
+                              CBLDocument* doc,
+                              CBLError* outError) noexcept
+{
+    return CBLDatabase_SaveDocumentWithConcurrencyControl
+        (db, doc, kCBLConcurrencyControlLastWriteWins, outError);
+}
+
+bool CBLDatabase_SaveDocumentWithConcurrencyControl(CBLDatabase* db,
+                                                    CBLDocument* doc,
+                                                    CBLConcurrencyControl concurrency,
+                                                    CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_SaveDocumentWithConcurrencyControl(col, doc, concurrency, outError);
+    } catchAndBridge(outError)
+}
+
+bool CBLDatabase_SaveDocumentWithConflictHandler(CBLDatabase* db,
+                                                 CBLDocument* doc,
+                                                 CBLConflictHandler conflictHandler,
+                                                 void *context,
+                                                 CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_SaveDocumentWithConflictHandler(col, doc, conflictHandler,
+                                                             context, outError);
+    } catchAndBridge(outError)
+}
+
+bool CBLDatabase_DeleteDocument(CBLDatabase *db,
+                                const CBLDocument* doc,
+                                CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_DeleteDocument(col, doc, outError);
+    } catchAndBridge(outError)
+}
+
+bool CBLDatabase_DeleteDocumentWithConcurrencyControl(CBLDatabase *db,
+                                                      const CBLDocument* doc,
+                                                      CBLConcurrencyControl concurrency,
+                                                      CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_DeleteDocumentWithConcurrencyControl(col, doc, concurrency, outError);
+    } catchAndBridge(outError)
+}
+
+/** Private API */
+bool CBLDatabase_DeleteDocumentByID(CBLDatabase* db,
+                                    FLString docID,
+                                    CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_DeleteDocumentByID(col, docID, outError);
+    } catchAndBridge(outError)
+}
+
+bool CBLDatabase_PurgeDocument(CBLDatabase* db,
+                               const CBLDocument* doc,
+                               CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        CBLDocument::checkCollectionMatches(doc->collection(), col);
+        return CBLCollection_PurgeDocumentByID(col, doc->docID(), outError);
+    } catchAndBridge(outError)
+}
+
+/** Private API */
+bool CBLDatabase_PurgeDocumentByID(CBLDatabase* db,
+                                   FLString docID,
+                                   CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_PurgeDocumentByID(col, docID, outError);
+    } catchAndBridge(outError)
+}
+
+CBLTimestamp CBLDatabase_GetDocumentExpiration(CBLDatabase* db,
+                                               FLSlice docID,
+                                               CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_GetDocumentExpiration(col, docID, outError);
+    } catchAndBridge(outError)
+}
+
+bool CBLDatabase_SetDocumentExpiration(CBLDatabase* db,
+                                       FLSlice docID,
+                                       CBLTimestamp expiration,
+                                       CBLError* outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_SetDocumentExpiration(col, docID, expiration, outError);
+    } catchAndBridge(outError)
+}
+
+
+#pragma mark - QUERIES:
+
+
+bool CBLDatabase_CreateValueIndex(CBLDatabase *db,
+                                  FLString name,
+                                  CBLValueIndexConfiguration config,
+                                  CBLError *outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_CreateValueIndex(col, name, config, outError);
+    } catchAndBridge(outError)
+}
+
+
+bool CBLDatabase_CreateFullTextIndex(CBLDatabase *db,
+                                     FLString name,
+                                     CBLFullTextIndexConfiguration config,
+                                     CBLError *outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_CreateFullTextIndex(col, name, config, outError);
+    } catchAndBridge(outError)
+}
+
+
+bool CBLDatabase_DeleteIndex(CBLDatabase *db,
+                             FLString name,
+                             CBLError *outError) noexcept
+{
+    try {
+        auto col = db->getInternalDefaultCollection();
+        return CBLCollection_DeleteIndex(col, name, outError);
+    } catchAndBridge(outError)
+}
+
+
+FLArray CBLDatabase_GetIndexNames(CBLDatabase *db) noexcept {
+    try {
+        auto col = db->getInternalDefaultCollection();
+        
+        CBLError error;
+        auto result = CBLCollection_GetIndexNames(col, &error);
+        if (!result) {
+            if (error.code != 0) {
+                alloc_slice message = CBLError_Message(&error);
+                CBL_Log(kCBLLogDomainDatabase, kCBLLogWarning,
+                        "Getting index names failed: %d/%d: %.*s",
+                        error.domain, error.code, (int)message.size, (char*)message.buf);
+            }
+            result = FLMutableArray_New();
+        }
+        return result;
+    } catchAndBridgeReturning(nullptr, FLMutableArray_New())
+}
+
+
+#pragma mark - CHANGE LISTENERS
+
+
+namespace cbl_internal {
+    struct DatabaseChangeContext {
+        const CBLDatabase* database;
+        const CBLCollection* collection;
+        CBLDatabaseChangeListener listener;
+        void* context;
+    };
+
+    struct DocumentChangeContext {
+        const CBLDatabase* database;
+        const CBLCollection* collection;
+        CBLDocumentChangeListener listener;
+        void* context;
+    };
+}
+
+
+CBLListenerToken* CBLDatabase_AddChangeListener(const CBLDatabase* db,
+                                                CBLDatabaseChangeListener listener,
+                                                void *context) noexcept
+{
+    auto wrappedContext = new DatabaseChangeContext();
+    wrappedContext->database = db;
+    wrappedContext->listener = listener;
+    wrappedContext->context = context;
+
+    auto wrappedListener = [](void* context, const CBLCollectionChange* change) {
+        DatabaseChangeContext* ctx = static_cast<DatabaseChangeContext*>(context);
+        ctx->listener(ctx->context, ctx->database, change->numDocs, change->docIDs);
+    };
+
+    try {
+        CBLCollection* col = const_cast<CBLDatabase*>(db)->getInternalDefaultCollection().detach();
+        wrappedContext->collection = col;
+        
+        auto token = CBLCollection_AddChangeListener(col, wrappedListener, wrappedContext);
+        token->extraInfo().pointer = wrappedContext;
+        token->extraInfo().destructor = [](void* ctx) {
+            CBLCollection_Release(static_cast<DatabaseChangeContext*>(ctx)->collection);
+            free(ctx);
+        };
+        return token;
+    } catchAndBridgeReturning(nullptr, make_retained<CBLListenerToken>((const void*)listener, nullptr).detach())
+}
 
 void CBLDatabase_BufferNotifications(CBLDatabase *db,
                                      CBLNotificationsReadyCallback callback,
@@ -168,6 +408,36 @@ void CBLDatabase_BufferNotifications(CBLDatabase *db,
 
 void CBLDatabase_SendNotifications(CBLDatabase *db) noexcept {
     db->sendNotifications();
+}
+
+
+CBLListenerToken* CBLDatabase_AddDocumentChangeListener(const CBLDatabase* db,
+                                                        FLString docID,
+                                                        CBLDocumentChangeListener listener,
+                                                        void *context) noexcept
+{
+    auto wrappedContext = new DocumentChangeContext();
+    wrappedContext->database = db;
+    wrappedContext->listener = listener;
+    wrappedContext->context = context;
+    
+    auto wrappedListener = [](void* context, const CBLDocumentChange* change) {
+        DocumentChangeContext* ctx = static_cast<DocumentChangeContext*>(context);
+        ctx->listener(ctx->context, ctx->database, change->docID);
+    };
+    
+    try {
+        CBLCollection* col = const_cast<CBLDatabase*>(db)->getInternalDefaultCollection().detach();
+        wrappedContext->collection = col;
+        
+        auto token = CBLCollection_AddDocumentChangeListener(col, docID, wrappedListener, wrappedContext);
+        token->extraInfo().pointer = wrappedContext;
+        token->extraInfo().destructor = [](void* ctx) {
+            CBLCollection_Release(static_cast<DatabaseChangeContext*>(ctx)->collection);
+            free(ctx);
+        };
+        return token;
+    } catchAndBridgeReturning(nullptr, make_retained<CBLListenerToken>((const void*)listener, nullptr).detach())
 }
 
 

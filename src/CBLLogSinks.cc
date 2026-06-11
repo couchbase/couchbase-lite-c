@@ -33,6 +33,8 @@ using namespace std;
 using namespace fleece;
 using namespace litecore;
 
+std::atomic<CBLLogSinks::LogAPIStyle> CBLLogSinks::_sAPIStyle { LogAPIStyle::none };
+
 CBLLogLevel CBLLogSinks::_sDomainsLogLevel { kCBLLogNone };
 CBLLogLevel CBLLogSinks::_sCallbackLogLevel{ kCBLLogNone };
 
@@ -121,10 +123,26 @@ void CBLLogSinks::log(CBLLogDomain domain, CBLLogLevel level, const char *msg) {
     c4slog(c4LogDomain, C4LogLevel(level), slice(msg));
 }
 
+void CBLLogSinks::validateAPIUsage(LogAPIStyle style) {
+    LogAPIStyle current = _sAPIStyle.load();
+    if (current == LogAPIStyle::none) {
+        if (!_sAPIStyle.compare_exchange_strong(current, style)) {
+            if (current != style) {
+                C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported,
+                               "Cannot use both new and old logging API simultaneously");
+            }
+        }
+    } else if (current != style) {
+        C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported,
+                       "Cannot use both new and old logging API simultaneously");
+    }
+}
+
 void CBLLogSinks::reset(void) {
     setConsoleLogSink({ kCBLLogWarning });
     setCustomLogSink({ kCBLLogNone });
     setFileLogSink({ kCBLLogNone, kFLSliceNull });
+    _sAPIStyle.store(LogAPIStyle::none);
 }
 
 void CBLLogSinks::logWithC4Log(CBLLogDomain domain, CBLLogLevel level, const char *msg) {

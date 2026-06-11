@@ -19,25 +19,31 @@
 #include "CBLLogSinks_Internal.hh"
 
 void CBLLogSinks_SetConsole(CBLConsoleLogSink logSink) noexcept {
-    try { CBLLogSinks::setConsoleLogSink(logSink); } catchAndWarnNoReturn();
+    try { CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::newStyle); } catchAndAbort()
+    CBLLogSinks::setConsoleLogSink(logSink);
 }
 
 CBLConsoleLogSink CBLLogSinks_Console(void) noexcept {
-    try { return CBLLogSinks::consoleLogSink(); } catchAndWarn();
+    try { CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::newStyle); } catchAndAbort()
+    return CBLLogSinks::consoleLogSink();
 }
 
 void CBLLogSinks_SetCustom(CBLCustomLogSink logSink) noexcept {
-    try { CBLLogSinks::setCustomLogSink(logSink); } catchAndWarnNoReturn();
+    try { CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::newStyle); } catchAndAbort()
+    CBLLogSinks::setCustomLogSink(logSink);
 }
 
 CBLCustomLogSink CBLLogSinks_CustomSink(void) noexcept {
-    try { return CBLLogSinks::customLogSink(); } catchAndWarn();
+    try { CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::newStyle); } catchAndAbort()
+    return CBLLogSinks::customLogSink();
 }
 
 void CBLLogSinks_SetFile(CBLFileLogSink logSink) noexcept {
+    try { CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::newStyle); } catchAndAbort()
     try { CBLLogSinks::setFileLogSink(logSink); } catchAndWarnNoReturn();
 }
 
 CBLFileLogSink CBLLogSinks_File(void) noexcept {
-    try { return CBLLogSinks::fileLogSink(); } catchAndWarn();
+    try { CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::newStyle); } catchAndAbort()
+    return CBLLogSinks::fileLogSink();
 }

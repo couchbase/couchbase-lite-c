@@ -27,11 +27,11 @@
 #pragma mark - CBLDatabaseConfiguration
 
 CBL_PUBLIC const bool kCBLDefaultDatabaseFullSync = false;
-CBL_PUBLIC const bool kCBLDefaultDatabaseMmapDisabled = false;
 
 #pragma mark - CBLLogFileConfiguration
 
 CBL_PUBLIC const bool kCBLDefaultLogFileUsePlaintext = false;
+CBL_PUBLIC const bool kCBLDefaultLogFileUsePlainText = false;
 CBL_PUBLIC const size_t kCBLDefaultLogFileMaxSize = 524288;
 CBL_PUBLIC const uint32_t kCBLDefaultLogFileMaxRotateCount = 1;
 
@@ -53,6 +53,7 @@ CBL_PUBLIC const unsigned kCBLDefaultReplicatorHeartbeat = 300;
 CBL_PUBLIC const unsigned kCBLDefaultReplicatorMaxAttemptsSingleShot = 10;
 CBL_PUBLIC const unsigned kCBLDefaultReplicatorMaxAttemptsContinuous = UINT_MAX;
 CBL_PUBLIC const unsigned kCBLDefaultReplicatorMaxAttemptsWaitTime = 300;
+CBL_PUBLIC const unsigned kCBLDefaultReplicatorMaxAttemptWaitTime = 300;
 CBL_PUBLIC const bool kCBLDefaultReplicatorDisableAutoPurge = false;
 CBL_PUBLIC const bool kCBLDefaultReplicatorAcceptParentCookies = false;
 

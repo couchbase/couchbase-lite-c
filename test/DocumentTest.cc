@@ -761,37 +761,23 @@ TEST_CASE_METHOD(DocumentTest, "Save Document into Different Default Collection 
     CBLCollection_Release(defaultCollection2);
 }
 
-#pragma mark - Timestamp
+#pragma mark - Generation
 
-/*
- https://github.com/couchbaselabs/couchbase-lite-api/blob/master/spec/tests/T0005-Version-Vector.md
-
- 1. TestDocumentTimestamp
-
- Description
- Test that the document's timestamp returns value as expected.
-
- Steps
- 1. Create a new document with id = "doc1"
- 2. Get document's timestamp and check that the timestamp is 0.
- 3. Save the document into the default collection.
- 4. Get document's timestamp and check that the timestamp is more than 0.
- 5. Get the document id = "doc1" from the database.
- 6. Get document's timestamp and check that the timestamp is the same as the timestamp from step 4.
-*/
-TEST_CASE_METHOD(DocumentTest, "Timestamp", "[Document]") {
+TEST_CASE_METHOD(DocumentTest, "Generation", "[Document]") {
     CBLDocument* doc = CBLDocument_CreateWithID("doc1"_sl);
     REQUIRE(doc);
-    CHECK(CBLDocument_Timestamp(doc) == 0);
-    
+    CHECK(CBLDocument_Generation(doc) == 0);
+
     CBLError error;
     REQUIRE(CBLCollection_SaveDocument(col, doc, &error));
-    auto timestamp = CBLDocument_Timestamp(doc);
-    CHECK(timestamp > 0);
+    CHECK(CBLDocument_Generation(doc) == 1);
     CBLDocument_Release(doc);
-    
+
     doc = CBLCollection_GetMutableDocument(col, "doc1"_sl, &error);
-    CHECK(CBLDocument_Timestamp(doc) == timestamp);
+    CHECK(CBLDocument_Generation(doc) == 1);
+
+    REQUIRE(CBLCollection_SaveDocument(col, doc, &error));
+    CHECK(CBLDocument_Generation(doc) == 2);
     CBLDocument_Release(doc);
 }
 

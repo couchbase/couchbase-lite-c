@@ -60,6 +60,130 @@ public:
     vector<CBLCollection*> cy;
 };
 
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Legacy - Create Replicator with no database and collections", "[Replicator]") {
+    ExpectingExceptions x;
+
+    config.database = nullptr;
+    config.collections = nullptr;
+    config.collectionCount = 0;
+
+    CBLError error {};
+    CBLReplicator* r = CBLReplicator_Create(&config, &error);
+    CHECK(!r);
+    CheckError(error, kCBLErrorInvalidParameter);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Legacy - Use both database and collections", "[Replicator]") {
+    ExpectingExceptions x;
+
+    config.database = db.ref();
+
+    auto cols = collectionConfigs({cx[0]});
+    config.collections = cols.data();
+    config.collectionCount = cols.size();
+
+    CBLError error {};
+    CBLReplicator* r = CBLReplicator_Create(&config, &error);
+    CHECK(!r);
+    CheckError(error, kCBLErrorInvalidParameter);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Legacy - Use outer level filters with collections", "[Replicator]") {
+    ExpectingExceptions x;
+
+    auto cols = collectionConfigs({cx[0]});
+    config.collections = cols.data();
+    config.collectionCount = cols.size();
+
+    SECTION("DOC IDS") {
+        config.documentIDs = FLMutableArray_New();
+    }
+
+    SECTION("CHANNELS") {
+        config.channels = FLMutableArray_New();
+    }
+
+    SECTION("PUSH FILTER") {
+        config.pushFilter = [](void *context, CBLDocument* doc, CBLDocumentFlags flags) -> bool {
+            return true;
+        };
+    }
+
+    SECTION("PULL FILTER") {
+        config.pullFilter = [](void *context, CBLDocument* doc, CBLDocumentFlags flags) -> bool {
+            return true;
+        };
+    }
+
+    CBLError error {};
+    CBLReplicator* r = CBLReplicator_Create(&config, &error);
+    CHECK(!r);
+    CheckError(error, kCBLErrorInvalidParameter);
+
+    FLArray_Release(config.documentIDs);
+    FLArray_Release(config.channels);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Legacy - Use outer level conflict resolver with collections", "[Replicator]") {
+    ExpectingExceptions x;
+
+    auto cols = collectionConfigs({cx[0]});
+    config.collections = cols.data();
+    config.collectionCount = cols.size();
+
+    config.conflictResolver = [](void *context,
+                                 FLString documentID,
+                                 const CBLDocument *localDocument,
+                                 const CBLDocument *remoteDocument) -> const CBLDocument*
+    {
+        return nullptr;
+    };
+
+    CBLError error {};
+    CBLReplicator* r = CBLReplicator_Create(&config, &error);
+    CHECK(!r);
+    CheckError(error, kCBLErrorInvalidParameter);
+}
+
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Legacy - Use property encryption with collections", "[Replicator]") {
+    ExpectingExceptions x;
+
+    auto cols = collectionConfigs({cx[0]});
+    config.collections = cols.data();
+    config.collectionCount = cols.size();
+
+    SECTION("ENCRYPTOR") {
+        config.propertyEncryptor = [](void* context,
+                                      FLString docID,
+                                      FLDict props,
+                                      FLString path,
+                                      FLSlice input,
+                                      FLStringResult* alg,
+                                      FLStringResult* kid,
+                                      CBLError* error) -> FLSliceResult {
+            return {nullptr, 0};
+        };
+    }
+
+    SECTION("DECRYPTOR") {
+        config.propertyDecryptor = [](void* context,
+                                      FLString docID,
+                                      FLDict props,
+                                      FLString path,
+                                      FLSlice input,
+                                      FLString alg,
+                                      FLString kid,
+                                      CBLError* error) -> FLSliceResult {
+            return {nullptr, 0};
+        };
+    }
+
+    CBLError error {};
+    CBLReplicator* r = CBLReplicator_Create(&config, &error);
+    CHECK(!r);
+    CheckError(error, kCBLErrorInvalidParameter);
+}
+
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Create Replicator with zero collections", "[Replicator]") {
     ExpectingExceptions x;
     
@@ -333,26 +457,30 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Default Conflict Resolver with Colle
     REQUIRE(foo1a);
     REQUIRE(CBLDocument_SetJSON(foo1a, slice("{\"greeting\":\"hi\"}"), &error));
     REQUIRE(CBLCollection_SaveDocument(cx[0], foo1a, &error));
+    REQUIRE(CBLDocument_SetJSON(foo1a, slice("{\"greeting\":\"hey\"}"), &error));
+    REQUIRE(CBLCollection_SaveDocument(cx[0], foo1a, &error));
     CBLDocument_Release(foo1a);
-    
+
     auto foo1b = CBLCollection_GetMutableDocument(cy[0], "foo1"_sl, &error);
     REQUIRE(foo1b);
     REQUIRE(CBLDocument_SetJSON(foo1b, slice("{\"greeting\":\"hola\"}"), &error));
     REQUIRE(CBLCollection_SaveDocument(cy[0], foo1b, &error));
     CBLDocument_Release(foo1b);
-    
-    auto bar1b = CBLCollection_GetMutableDocument(cy[1], "bar1"_sl, &error);
-    REQUIRE(bar1b);
-    REQUIRE(CBLDocument_SetJSON(bar1b, slice("{\"greeting\":\"salve\"}"), &error));
-    REQUIRE(CBLCollection_SaveDocument(cy[1], bar1b, &error));
-    CBLDocument_Release(bar1b);
-    
+
     auto bar1a = CBLCollection_GetMutableDocument(cx[1], "bar1"_sl, &error);
     REQUIRE(bar1a);
     REQUIRE(CBLDocument_SetJSON(bar1a, slice("{\"greeting\":\"sawasdee\"}"), &error));
     REQUIRE(CBLCollection_SaveDocument(cx[1], bar1a, &error));
     CBLDocument_Release(bar1a);
-    
+
+    auto bar1b = CBLCollection_GetMutableDocument(cy[1], "bar1"_sl, &error);
+    REQUIRE(bar1b);
+    REQUIRE(CBLDocument_SetJSON(bar1b, slice("{\"greeting\":\"salve\"}"), &error));
+    REQUIRE(CBLCollection_SaveDocument(cy[1], bar1b, &error));
+    REQUIRE(CBLDocument_SetJSON(bar1b, slice("{\"greeting\":\"bonjour\"}"), &error));
+    REQUIRE(CBLCollection_SaveDocument(cy[1], bar1b, &error));
+    CBLDocument_Release(bar1b);
+
     config.replicatorType = kCBLReplicatorTypePush;
     expectedDocumentCount = 0;
     enableDocReplicationListener = true;
@@ -377,12 +505,12 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Default Conflict Resolver with Colle
 
     auto foo1 = CBLCollection_GetDocument(cx[0], "foo1"_sl, &error);
     REQUIRE(foo1);
-    CHECK(Dict(CBLDocument_Properties(foo1)).toJSONString() == "{\"greeting\":\"hola\"}");
+    CHECK(Dict(CBLDocument_Properties(foo1)).toJSONString() == "{\"greeting\":\"hey\"}");
     CBLDocument_Release(foo1);
 
     auto bar1 = CBLCollection_GetDocument(cx[1], "bar1"_sl, &error);
     REQUIRE(bar1);
-    CHECK(Dict(CBLDocument_Properties(bar1)).toJSONString() == "{\"greeting\":\"sawasdee\"}");
+    CHECK(Dict(CBLDocument_Properties(bar1)).toJSONString() == "{\"greeting\":\"bonjour\"}");
     CBLDocument_Release(bar1);
 }
 
@@ -765,7 +893,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Collection Document Pending", "[Repl
     repl = CBLReplicator_Create(&config, &error);
     
     // Check Pending Docs:
-    FLDict pending1 = CBLReplicator_PendingDocumentIDs(repl, cx[0], &error);
+    FLDict pending1 = CBLReplicator_PendingDocumentIDs2(repl, cx[0], &error);
     REQUIRE(pending1);
     CHECK(FLDict_Count(pending1) == 3);
     CHECK(FLValue_AsBool(FLDict_Get(pending1, "foo1"_sl)));
@@ -773,38 +901,38 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Collection Document Pending", "[Repl
     CHECK(FLValue_AsBool(FLDict_Get(pending1, "foo3"_sl)));
     FLDict_Release(pending1);
     
-    CHECK(CBLReplicator_IsDocumentPending(repl, "foo1"_sl, cx[0], &error));
-    CHECK(CBLReplicator_IsDocumentPending(repl, "foo1"_sl, cx[0], &error));
-    CHECK(CBLReplicator_IsDocumentPending(repl, "foo1"_sl, cx[0], &error));
+    CHECK(CBLReplicator_IsDocumentPending2(repl, "foo1"_sl, cx[0], &error));
+    CHECK(CBLReplicator_IsDocumentPending2(repl, "foo1"_sl, cx[0], &error));
+    CHECK(CBLReplicator_IsDocumentPending2(repl, "foo1"_sl, cx[0], &error));
     
-    FLDict pending2 = CBLReplicator_PendingDocumentIDs(repl, cx[1], &error);
+    FLDict pending2 = CBLReplicator_PendingDocumentIDs2(repl, cx[1], &error);
     REQUIRE(pending2);
     CHECK(FLDict_Count(pending2) == 2);
     CHECK(FLValue_AsBool(FLDict_Get(pending2, "bar1"_sl)));
     CHECK(FLValue_AsBool(FLDict_Get(pending2, "bar2"_sl)));
     FLDict_Release(pending2);
     
-    CHECK(CBLReplicator_IsDocumentPending(repl, "bar1"_sl, cx[1], &error));
-    CHECK(CBLReplicator_IsDocumentPending(repl, "bar2"_sl, cx[1], &error));
+    CHECK(CBLReplicator_IsDocumentPending2(repl, "bar1"_sl, cx[1], &error));
+    CHECK(CBLReplicator_IsDocumentPending2(repl, "bar2"_sl, cx[1], &error));
 
     // Replicate:
     expectedDocumentCount = 5;
     replicate();
     
     // Check Pending Docs:
-    pending1 = CBLReplicator_PendingDocumentIDs(repl, cx[0], &error);
+    pending1 = CBLReplicator_PendingDocumentIDs2(repl, cx[0], &error);
     REQUIRE(pending1);
     CHECK(FLDict_Count(pending1) == 0);
     FLDict_Release(pending1);
     
-    CHECK(!CBLReplicator_IsDocumentPending(repl, "foo2"_sl, cx[0], &error));
+    CHECK(!CBLReplicator_IsDocumentPending2(repl, "foo2"_sl, cx[0], &error));
     
-    pending2 = CBLReplicator_PendingDocumentIDs(repl, cx[1], &error);
+    pending2 = CBLReplicator_PendingDocumentIDs2(repl, cx[1], &error);
     REQUIRE(pending2);
     CHECK(FLDict_Count(pending2) == 0);
     FLDict_Release(pending2);
     
-    CHECK(!CBLReplicator_IsDocumentPending(repl, "bar1"_sl, cx[1], &error));
+    CHECK(!CBLReplicator_IsDocumentPending2(repl, "bar1"_sl, cx[1], &error));
     
     // Upadate Docs:
     auto foo2 = CBLCollection_GetMutableDocument(cx[0], "foo2"_sl, &error);
@@ -820,21 +948,21 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Collection Document Pending", "[Repl
     CBLDocument_Release(bar1);
     
     // Check Pending Docs:
-    pending1 = CBLReplicator_PendingDocumentIDs(repl, cx[0], &error);
+    pending1 = CBLReplicator_PendingDocumentIDs2(repl, cx[0], &error);
     REQUIRE(pending1);
     CHECK(FLDict_Count(pending1) == 1);
     CHECK(FLValue_AsBool(FLDict_Get(pending1, "foo2"_sl)));
     FLDict_Release(pending1);
     
-    CHECK(CBLReplicator_IsDocumentPending(repl, "foo2"_sl, cx[0], &error));
+    CHECK(CBLReplicator_IsDocumentPending2(repl, "foo2"_sl, cx[0], &error));
     
-    pending2 = CBLReplicator_PendingDocumentIDs(repl, cx[1], &error);
+    pending2 = CBLReplicator_PendingDocumentIDs2(repl, cx[1], &error);
     REQUIRE(pending2);
     CHECK(FLDict_Count(pending2) == 1);
     CHECK(FLValue_AsBool(FLDict_Get(pending2, "bar1"_sl)));
     FLDict_Release(pending2);
     
-    CHECK(CBLReplicator_IsDocumentPending(repl, "bar1"_sl, cx[1], &error));
+    CHECK(CBLReplicator_IsDocumentPending2(repl, "bar1"_sl, cx[1], &error));
 }
 
 // Note: This test is not an ideal fit for ReplicatorCollectionTest, but it is the best available location for now.

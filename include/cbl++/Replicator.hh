@@ -282,11 +282,11 @@ namespace cbl {
             CBLReplicatorConfiguration c_config = config;
             
             // Construct C replication collections to set to the c_config:
-            std::vector<CBLCollectionConfiguration> colConfigs;
+            std::vector<CBLReplicationCollection> colConfigs;
             for (int i = 0; i < collections.size(); i++) {
                 CollectionConfiguration& col = collections[i];
                 
-                CBLCollectionConfiguration colConfig {};
+                CBLReplicationCollection colConfig {};
                 colConfig.collection = col.collection().ref();
                 
                 if (!col.channels.empty()) {
@@ -397,7 +397,7 @@ namespace cbl {
             @warning If the given collection is not part of the replication, an error will be thrown. */
         fleece::Dict pendingDocumentIDs(Collection& collection) const {
             CBLError error;
-            fleece::Dict result = CBLReplicator_PendingDocumentIDs(ref(), collection.ref(), &error);
+            fleece::Dict result = CBLReplicator_PendingDocumentIDs2(ref(), collection.ref(), &error);
             internal::check(result != nullptr, error);
             return result;
         }
@@ -412,7 +412,7 @@ namespace cbl {
             @warning If the given collection is not part of the replication, an error will be thrown. */
         bool isDocumentPending(std::string_view docID, Collection& collection) const {
             CBLError error;
-            bool pending = CBLReplicator_IsDocumentPending(ref(), slice(docID), collection.ref(), &error);
+            bool pending = CBLReplicator_IsDocumentPending2(ref(), slice(docID), collection.ref(), &error);
             internal::check(pending || error.code == 0, error);
             return pending;
         }

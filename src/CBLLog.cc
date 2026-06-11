@@ -26,8 +26,77 @@ using namespace std;
 using namespace fleece;
 using namespace litecore;
 
+static CBLLogFileConfiguration sLogFileConfig;
+static alloc_slice sLogFileDir;
+
 void CBLLog_Init() {
     CBLLogSinks::init();
+}
+
+CBLLogLevel CBLLog_ConsoleLevel() CBLAPI {
+    CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::oldStyle);
+    return CBLLogSinks::consoleLogSink().level;
+}
+
+void CBLLog_SetConsoleLevel(CBLLogLevel level) CBLAPI {
+    CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::oldStyle);
+    CBLLogSinks::setConsoleLogSink({ level, kCBLLogDomainMaskAll });
+}
+
+CBLLogLevel CBLLog_CallbackLevel() CBLAPI {
+    CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::oldStyle);
+    return CBLLogSinks::customLogSink().level;
+}
+
+void CBLLog_SetCallbackLevel(CBLLogLevel level) CBLAPI {
+    CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::oldStyle);
+    
+    auto config = CBLLogSinks::customLogSink();
+    config.level = level;
+    CBLLogSinks::setCustomLogSink(config);
+}
+
+CBLLogCallback CBLLog_Callback() CBLAPI {
+    CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::oldStyle);
+    return CBLLogSinks::customLogSink().callback;
+}
+
+void CBLLog_SetCallback(CBLLogCallback callback) CBLAPI {
+    CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::oldStyle);
+    
+    auto config = CBLLogSinks::customLogSink();
+    config.callback = callback;
+    CBLLogSinks::setCustomLogSink(config);
+}
+
+const CBLLogFileConfiguration* CBLLog_FileConfig() CBLAPI {
+    CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::oldStyle);
+    
+    if (sLogFileConfig.directory.buf)
+        return &sLogFileConfig;
+    else
+        return nullptr;
+}
+
+bool CBLLog_SetFileConfig(CBLLogFileConfiguration config, CBLError *outError) CBLAPI {
+    CBLLogSinks::validateAPIUsage(CBLLogSinks::LogAPIStyle::oldStyle);
+    
+    sLogFileDir = config.directory;     // copy string to the heap
+    config.directory = sLogFileDir;     // and put the heap copy in the struct
+    sLogFileConfig = config;
+    
+    CBLFileLogSink fileLogSink { };
+    fileLogSink.level = config.level;
+    fileLogSink.directory = sLogFileConfig.directory;
+    auto maxRotateCount = config.maxRotateCount > 0 ? config.maxRotateCount : kCBLDefaultLogFileMaxRotateCount;
+    fileLogSink.maxKeptFiles = maxRotateCount + 1;
+    fileLogSink.maxSize = config.maxSize;
+    fileLogSink.usePlaintext = config.usePlaintext;
+    
+    try {
+        CBLLogSinks::setFileLogSink(fileLogSink);
+        return true;
+    } catchAndBridge(outError)
 }
 
 void CBL_Log(CBLLogDomain domain, CBLLogLevel level, const char *format, ...) CBLAPI {
@@ -63,6 +132,8 @@ void CBLLog_EndExpectingExceptions() CBLAPI {
 /** Private API */
 void CBLLog_Reset(void) CBLAPI {
     CBLLogSinks::reset();
+    sLogFileDir = nullptr;
+    sLogFileConfig = { kCBLLogNone, kFLSliceNull };
 }
 
 /** Private API */

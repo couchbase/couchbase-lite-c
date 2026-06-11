@@ -225,6 +225,7 @@ protected:
     friend struct CBLReplicator;
     friend struct CBLURLEndpointListener;
     friend struct cbl_internal::CBLLocalEndpoint;
+    friend struct cbl_internal::ListenerToken<CBLDocumentChangeListener>;
     friend struct cbl_internal::ListenerToken<CBLQueryChangeListener>;
     friend struct cbl_internal::ListenerToken<CBLCollectionDocumentChangeListener>;
     
@@ -325,7 +326,7 @@ private:
         
         C4DatabaseConfig2 c4Config = {};
         c4Config.parentDirectory = effectiveDir(config->directory);
-        c4Config.flags = kC4DB_Create | kC4DB_VersionVectors;
+        c4Config.flags = kC4DB_Create;
         if (config->fullSync) {
             c4Config.flags |= kC4DB_DiskSyncFull;
         }
