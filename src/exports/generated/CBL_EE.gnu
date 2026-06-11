@@ -255,7 +255,6 @@ CBL_C {
 		CBLLog_LogWithC4Log;
 		CBL_DeleteDirectoryRecursive;
 		kCBLDefaultDatabaseFullSync;
-		kCBLDefaultDatabaseMmapDisabled;
 		kCBLDefaultLogFileUsePlaintext;
 		kCBLDefaultLogFileMaxSize;
 		kCBLDefaultLogFileMaxRotateCount;
