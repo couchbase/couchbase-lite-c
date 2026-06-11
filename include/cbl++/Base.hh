@@ -52,7 +52,9 @@ namespace cbl {
 
     using QueryLanguage = CBLQueryLanguage;
 
-    // Artificial base class of the C++ wrapper classes; just manages ref-counting.
+    // Internal base class of the C++ wrapper classes; it holds the reference to the
+    // underlying ref-counted C object and manages retain/release for it.
+    // Not part of the public API, and excluded from the API docs.
     class RefCounted {
     protected:
         RefCounted() noexcept                            :_ref(nullptr) { }
@@ -133,25 +135,38 @@ namespace cbl {
         }
     }
 
-// Internal use only: Copy/move ctors and assignment ops that have to be declared in subclasses
+// For use by the cbl++ headers only: generates the public boilerplate members (ctors,
+// assignment ops, comparisons, ref()) that each wrapper class must declare itself.
 #define CBL_REFCOUNTED_WITHOUT_COPY_MOVE_BOILERPLATE(CLASS, SUPER, C_TYPE) \
 public: \
+    /** Constructs a null reference (one that points to no object). */ \
     CLASS() noexcept                              :SUPER() { } \
+    /** Releases the underlying object and resets this to a null reference. */ \
     CLASS& operator=(std::nullptr_t)              {clear(); return *this;} \
+    /** Returns true if this references an object, or false if it is a null reference. */ \
     bool valid() const                            {return RefCounted::valid();} \
+    /** Returns true if this references an object (same as \ref valid). */ \
     explicit operator bool() const                {return valid();} \
+    /** Returns true if both sides reference the same object, or are both null references. */ \
     bool operator==(const CLASS &other) const     {return _ref == other._ref;} \
+    /** Returns true if the two sides reference different objects. */ \
     bool operator!=(const CLASS &other) const     {return _ref != other._ref;} \
+    /** Returns a pointer to the underlying C object (C_TYPE), or NULL if this is a null reference. */ \
     C_TYPE* _cbl_nullable ref() const             {return (C_TYPE*)_ref;}\
 protected: \
+    /** (Internal) Constructs a reference wrapping, and retaining, a C object pointer. */ \
     explicit CLASS(C_TYPE* _cbl_nullable ref)     :SUPER((CBLRefCounted*)ref) { }
 
 #define CBL_REFCOUNTED_BOILERPLATE(CLASS, SUPER, C_TYPE) \
 CBL_REFCOUNTED_WITHOUT_COPY_MOVE_BOILERPLATE(CLASS, SUPER, C_TYPE) \
 public: \
+    /** Copy constructor: creates another reference to the same object as \p other. */ \
     CLASS(const CLASS &other) noexcept            :SUPER(other) { } \
+    /** Move constructor: takes over the reference from \p other, leaving it a null reference. */ \
     CLASS(CLASS &&other) noexcept                 :SUPER((SUPER&&)other) { } \
+    /** Copy assignment: replaces this reference with a reference to \p other's object. */ \
     CLASS& operator=(const CLASS &other) noexcept {SUPER::operator=(other); return *this;} \
+    /** Move assignment: replaces this reference with \p other's, leaving \p other a null reference. */ \
     CLASS& operator=(CLASS &&other) noexcept      {SUPER::operator=((SUPER&&)other); return *this;}
 
     /** A token representing a registered listener; instances are returned from the various
