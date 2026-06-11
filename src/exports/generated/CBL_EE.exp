@@ -296,7 +296,6 @@ _CBLLog_Reset
 _CBLLog_LogWithC4Log
 _CBL_DeleteDirectoryRecursive
 _kCBLDefaultDatabaseFullSync
-_kCBLDefaultDatabaseMmapDisabled
 _kCBLDefaultLogFileUsePlaintext
 _kCBLDefaultLogFileUsePlainText
 _kCBLDefaultLogFileMaxSize

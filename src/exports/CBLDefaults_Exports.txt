@@ -23,7 +23,6 @@
 ### CBLDatabaseConfiguration
 
 kCBLDefaultDatabaseFullSync
-kCBLDefaultDatabaseMmapDisabled
 
 ### CBLLogFileConfiguration
 
