@@ -40,7 +40,8 @@ namespace cbl {
     /** Conflict handler used when saving a document. */
     using CollectionConflictHandler  = std::function<bool(MutableDocument documentBeingSaved,
                                                           Document conflictingDocument)>;
-    /** Value Index Configuration. */
+    /** Configuration for creating a value index, which indexes the values of one or more
+        document properties. */
     struct ValueIndexConfiguration {
         /** The language used in the expressions (Required). */
         QueryLanguage expressionLanguage;
@@ -56,7 +57,7 @@ namespace cbl {
         std::string where;
     };
 
-    /** Full-Text Index Configuration. */
+    /** Configuration for creating a full-text index, which enables full-text search in queries. */
     struct FullTextIndexConfiguration {
         /** The language used in the expressions (Required). */
         QueryLanguage expressionLanguage;
@@ -111,7 +112,7 @@ namespace cbl {
     };
 
     /**
-     A Collection class represent a collection which is a container for documents.
+     A Collection is a container for documents within a database.
      A collection can be thought as a table in the relational database. Each collection belongs to
      a scope which is simply a namespce, and has a name which is unique within its scope.
      
@@ -297,11 +298,10 @@ namespace cbl {
         }
 
 #ifdef COUCHBASE_ENTERPRISE
-        /** ENTERPRISE EDITION ONLY
-         
-            Creatres a vector index in the collection.
+        /** Creates a vector index in the collection.
             If an identical index with that name already exists, nothing happens (and no error is returned.)
             If a non-identical index with that name already exists, it is deleted and re-created.
+            \note ENTERPRISE EDITION ONLY
             @param name  The index name.
             @param config  The vector index config. */
         inline void createVectorIndex(std::string_view name, VectorIndexConfiguration config);
