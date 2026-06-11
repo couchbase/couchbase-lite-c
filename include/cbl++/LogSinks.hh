@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 
-// VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
-// future releases.
 
 #pragma once
 #include "cbl/CBLLogSinks.h"

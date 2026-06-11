@@ -27,8 +27,6 @@
 #include <vector>
 #include <unordered_map>
 
-// VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
-// future releases.
 
 CBL_ASSUME_NONNULL_BEGIN
 
