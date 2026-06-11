@@ -77,15 +77,15 @@ public:
         // are from the same database instance:
         auto type = _conf.continuous ? kC4Continuous : kC4OneShot;
         
-        auto effectiveCollectionConfigs = _conf.effectiveCollectionConfigs();
+        auto effectiveCollections = _conf.effectiveCollections();
         
         std::vector<C4ReplicationCollection> c4ReplCols;
-        c4ReplCols.reserve(effectiveCollectionConfigs.size());
+        c4ReplCols.reserve(effectiveCollections.size());
         
         std::vector<alloc_slice> optionDicts;
-        optionDicts.reserve(effectiveCollectionConfigs.size());
+        optionDicts.reserve(effectiveCollections.size());
         
-        for (CBLCollectionConfiguration& colConfig : effectiveCollectionConfigs) {
+        for (CBLReplicationCollection& colConfig : effectiveCollections) {
             auto& c4ReplCol = c4ReplCols.emplace_back();
             
             auto spec = colConfig.collection->spec();
@@ -145,7 +145,7 @@ public:
         };
         
 #ifdef COUCHBASE_ENTERPRISE
-        if (_conf.documentPropertyEncryptor) {
+        if (_conf.propertyEncryptor || _conf.documentPropertyEncryptor) {
             params.propertyEncryptor = [](void* ctx,
                                           C4CollectionSpec spec,
                                           C4String documentID,
@@ -161,7 +161,7 @@ public:
             };
         }
         
-        if (_conf.documentPropertyDecryptor) {
+        if (_conf.propertyDecryptor || _conf.documentPropertyDecryptor) {
             params.propertyDecryptor = [](void* ctx,
                                           C4CollectionSpec spec,
                                           C4String documentID,
@@ -316,7 +316,7 @@ private:
         return enc.finish();
     }
     
-    alloc_slice encodeCollectionOptions(CBLCollectionConfiguration& colConfig) {
+    alloc_slice encodeCollectionOptions(CBLReplicationCollection& colConfig) {
         Encoder enc;
         enc.beginDict();
         _conf.writeCollectionOptions(colConfig, enc);
@@ -458,8 +458,15 @@ private:
                            C4StringResult* keyID, C4Error* outError)
     {
         CBLError error {};
-        C4SliceResult result=  _conf.documentPropertyEncryptor(_conf.context, spec.scope, spec.name, documentID,
-                                                               properties, keyPath, input, algorithm, keyID, &error);
+        C4SliceResult result;
+        if (_conf.propertyEncryptor) {
+            assert(spec == kC4DefaultCollectionSpec);
+            result = _conf.propertyEncryptor(_conf.context, documentID, properties, keyPath, input,
+                                             algorithm, keyID, &error);
+        } else {
+            result = _conf.documentPropertyEncryptor(_conf.context, spec.scope, spec.name, documentID,
+                                                     properties, keyPath, input, algorithm, keyID, &error);
+        }
         *outError = internal(error);
         return result;
     }
@@ -469,8 +476,15 @@ private:
                            C4String keyID, C4Error* outError)
     {
         CBLError error {};
-        C4SliceResult result = _conf.documentPropertyDecryptor(_conf.context, spec.scope, spec.name, documentID,
-                                                               properties, keyPath, input, algorithm, keyID, &error);
+        C4SliceResult result;
+        if (_conf.propertyDecryptor) {
+            assert(spec == kC4DefaultCollectionSpec);
+            result = _conf.propertyDecryptor(_conf.context, documentID, properties, keyPath, input,
+                                             algorithm, keyID, &error);
+        } else {
+            result = _conf.documentPropertyDecryptor(_conf.context, spec.scope, spec.name, documentID,
+                                                     properties, keyPath, input, algorithm, keyID, &error);
+        }
         *outError = internal(error);
         return result;
     }
@@ -501,7 +515,7 @@ private:
         return ss.str();
     }
     
-    using CollectionConfigurationMap = std::unordered_map<C4Database::CollectionSpec, CBLCollectionConfiguration>;
+    using ReplicationCollectionsMap = std::unordered_map<C4Database::CollectionSpec, CBLReplicationCollection>;
 
     recursive_mutex                             _mutex;
     ReplicatorConfiguration const               _conf;
@@ -509,7 +523,7 @@ private:
     Retained<C4Replicator>                      _c4repl;
     string                                      _replID;
     string                                      _desc;
-    CollectionConfigurationMap                  _collections;       // For filters and conflict resolver
+    ReplicationCollectionsMap                   _collections;       // For filters and conflict resolver
     bool                                        _useInitialStatus;  // For returning status before first start
     C4ReplicatorStatus                          _c4status {kC4Stopped};
     int                                         _activeConflictResolvers {0};

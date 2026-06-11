@@ -117,15 +117,197 @@ TEST_CASE_METHOD(ReplicatorLocalTest, "Set Suspended", "[Replicator]") {
     REQUIRE(waitForActivityLevel(kCBLReplicatorStopped, 10.0));
 }
 
+#pragma mark - LEGACY REPLICATOR API:
+
+TEST_CASE_METHOD(ReplicatorLocalTest, "Legacy - Pending Documents", "[Replicator]") {
+    config.replicatorType = kCBLReplicatorTypePush;
+
+    replicate();
+    CHECK(asVector(replicatedDocIDs) == vector<string>{});
+
+    CBLError error;
+    FLDict ids = CBLReplicator_PendingDocumentIDs(repl, &error);
+    CHECK(FLDict_Count(ids) == 0);
+    FLDict_Release(ids);
+
+    MutableDocument doc1("foo1");
+    doc1["greeting"] = "Howdy!";
+    defaultCollection.saveDocument(doc1);
+
+    MutableDocument doc2("foo2");
+    doc2["greeting"] = "Hello!";
+    defaultCollection.saveDocument(doc2);
+
+    ids = CBLReplicator_PendingDocumentIDs(repl, &error);
+    CHECK(FLDict_Count(ids) == 2);
+    CHECK(FLDict_Get(ids, "foo1"_sl));
+    CHECK(FLDict_Get(ids, "foo2"_sl));
+    FLDict_Release(ids);
+
+    CHECK(CBLReplicator_IsDocumentPending(repl, "foo1"_sl, &error));
+    CHECK(CBLReplicator_IsDocumentPending(repl, "foo2"_sl, &error));
+
+    replicate();
+
+    CHECK(asVector(replicatedDocIDs) == vector<string>{"foo1", "foo2"});
+
+    ids = CBLReplicator_PendingDocumentIDs(repl, &error);
+    CHECK(FLDict_Count(ids) == 0);
+    FLDict_Release(ids);
+
+    CHECK(!CBLReplicator_IsDocumentPending(repl, "foo1"_sl, &error));
+    CHECK(error.code == 0);
+
+    CHECK(!CBLReplicator_IsDocumentPending(repl, "foo2"_sl, &error));
+    CHECK(error.code == 0);
+}
+
+TEST_CASE_METHOD(ReplicatorLocalTest, "Legacy - Replicate with Database Config", "[Replicator]") {
+    config.database = db.ref();
+    config.collections = nullptr;
+    config.collectionCount = 0;
+
+    SECTION("Push") {
+        config.replicatorType = kCBLReplicatorTypePush;
+
+        MutableDocument doc("foo");
+        doc["greeting"] = "Howdy!";
+        defaultCollection.saveDocument(doc);
+
+        replicate();
+
+        CHECK(asVector(replicatedDocIDs) == vector<string>{"foo"});
+        Document copiedDoc = otherDBDefaultCol.getDocument("foo");
+        REQUIRE(copiedDoc);
+        CHECK(copiedDoc["greeting"].asString() == "Howdy!"_sl);
+    }
+
+    SECTION("Pull") {
+        config.replicatorType = kCBLReplicatorTypePull;
+
+        MutableDocument doc("foo");
+        doc["greeting"] = "Howdy!";
+        otherDBDefaultCol.saveDocument(doc);
+
+        replicate();
+
+        CHECK(asVector(replicatedDocIDs) == vector<string>{"foo"});
+        Document copiedDoc = defaultCollection.getDocument("foo");
+        REQUIRE(copiedDoc);
+        CHECK(copiedDoc["greeting"].asString() == "Howdy!"_sl);
+    }
+}
+
+TEST_CASE_METHOD(ReplicatorLocalTest, "Legacy - Filters with Database Config", "[Replicator]") {
+    config.database = db.ref();
+    config.collections = nullptr;
+    config.collectionCount = 0;
+
+    SECTION("Push Filter") {
+        MutableDocument doc1("foo1");
+        doc1["greeting"] = "Howdy!";
+        defaultCollection.saveDocument(doc1);
+
+        MutableDocument doc2("foo2");
+        doc2["greeting"] = "Hello!";
+        defaultCollection.saveDocument(doc2);
+
+        config.replicatorType = kCBLReplicatorTypePush;
+        config.pushFilter = [](void *context, CBLDocument* doc, CBLDocumentFlags flags) -> bool {
+            return slice(CBLDocument_ID(doc)) == "foo1"_sl;
+        };
+        expectedDocumentCount = 1;
+        replicate();
+
+        CHECK(asVector(replicatedDocIDs) == vector<string>{"foo1"});
+        CHECK(otherDBDefaultCol.getDocument("foo1"));
+        CHECK(!otherDBDefaultCol.getDocument("foo2"));
+    }
+
+    SECTION("Pull Filter") {
+        MutableDocument doc1("foo1");
+        doc1["greeting"] = "Howdy!";
+        otherDBDefaultCol.saveDocument(doc1);
+
+        MutableDocument doc2("foo2");
+        doc2["greeting"] = "Hello!";
+        otherDBDefaultCol.saveDocument(doc2);
+
+        config.replicatorType = kCBLReplicatorTypePull;
+        config.pullFilter = [](void *context, CBLDocument* doc, CBLDocumentFlags flags) -> bool {
+            return slice(CBLDocument_ID(doc)) == "foo1"_sl;
+        };
+        expectedDocumentCount = 1;
+        replicate();
+
+        CHECK(defaultCollection.getDocument("foo1"));
+        CHECK(!defaultCollection.getDocument("foo2"));
+    }
+
+    SECTION("DocumentIDs") {
+        MutableDocument doc1("foo1");
+        doc1["greeting"] = "Howdy!";
+        defaultCollection.saveDocument(doc1);
+
+        MutableDocument doc2("foo2");
+        doc2["greeting"] = "Hello!";
+        defaultCollection.saveDocument(doc2);
+
+        config.replicatorType = kCBLReplicatorTypePush;
+        config.documentIDs = FLMutableArray_NewFromJSON("[\"foo1\"]"_sl, nullptr);
+        expectedDocumentCount = 1;
+        replicate();
+
+        CHECK(asVector(replicatedDocIDs) == vector<string>{"foo1"});
+        CHECK(otherDBDefaultCol.getDocument("foo1"));
+        CHECK(!otherDBDefaultCol.getDocument("foo2"));
+
+        FLArray_Release(config.documentIDs);
+    }
+}
+
+TEST_CASE_METHOD(ReplicatorLocalTest, "Legacy - Conflict Resolver with Database Config", "[Replicator][Conflict]") {
+    config.database = db.ref();
+    config.collections = nullptr;
+    config.collectionCount = 0;
+    config.replicatorType = kCBLReplicatorTypePull;
+
+    // Create a conflict:
+    MutableDocument doc("foo");
+    doc["greeting"] = "Howdy!";
+    defaultCollection.saveDocument(doc);
+
+    MutableDocument doc2("foo");
+    doc2["greeting"] = "Salaam Alaykum";
+    otherDBDefaultCol.saveDocument(doc2);
+
+    // Local wins:
+    config.conflictResolver = [](void *context,
+                                 FLString documentID,
+                                 const CBLDocument *localDocument,
+                                 const CBLDocument *remoteDocument) -> const CBLDocument*
+    {
+        return localDocument;
+    };
+
+    // Pull:
+    replicate();
+
+    CHECK(asVector(replicatedDocIDs) == vector<string>{"foo"});
+    Document localDoc = defaultCollection.getDocument("foo");
+    REQUIRE(localDoc);
+    CHECK(localDoc["greeting"].asString() == "Howdy!"_sl);
+}
+
 TEST_CASE_METHOD(ReplicatorLocalTest, "Default Resolver : Deleted Wins", "[Replicator][Conflict]") {
     SECTION("No conflict resolved specified") {
-        configureCollectionConfigs(config, [](CBLCollectionConfiguration& colConfig) {
+        configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
             colConfig.conflictResolver = nullptr;
         });
     }
     
     SECTION("Specify default conflict resolver") {
-        configureCollectionConfigs(config, [](CBLCollectionConfiguration& colConfig) {
+        configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
             colConfig.conflictResolver = CBLDefaultConflictResolver;
         });
     }
@@ -172,13 +354,13 @@ TEST_CASE_METHOD(ReplicatorLocalTest, "Default Resolver : Deleted Wins", "[Repli
 
 TEST_CASE_METHOD(ReplicatorLocalTest, "Default Resolver : Higher Gen Wins", "[Replicator][Conflict]") {
     SECTION("No conflict resolved specified") {
-        configureCollectionConfigs(config, [](CBLCollectionConfiguration& colConfig) {
+        configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
             colConfig.conflictResolver = nullptr;
         });
     }
     
     SECTION("Specify default conflict resolver") {
-        configureCollectionConfigs(config, [](CBLCollectionConfiguration& colConfig) {
+        configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
             colConfig.conflictResolver = CBLDefaultConflictResolver;
         });
     }
@@ -227,13 +409,13 @@ TEST_CASE_METHOD(ReplicatorLocalTest, "Default Resolver : Higher Gen Wins", "[Re
 
 TEST_CASE_METHOD(ReplicatorLocalTest, "Default Resolver : Higher RevID Wins", "[Replicator][Conflict]") {
     SECTION("No conflict resolved specified") {
-        configureCollectionConfigs(config, [](CBLCollectionConfiguration& colConfig) {
+        configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
             colConfig.conflictResolver = nullptr;
         });
     }
     
     SECTION("Specify default conflict resolver") {
-        configureCollectionConfigs(config, [](CBLCollectionConfiguration& colConfig) {
+        configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
             colConfig.conflictResolver = CBLDefaultConflictResolver;
         });
     }
@@ -334,7 +516,7 @@ public:
         replicatedDocIDs.clear();
         resolverCalled = false;
         
-        configureCollectionConfigs(config, [](CBLCollectionConfiguration& colConfig) {
+        configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
             colConfig.conflictResolver = [](void *context,
                                             FLString documentID,
                                             const CBLDocument *localDocument,
@@ -583,7 +765,7 @@ TEST_CASE_METHOD(ReplicatorLocalTest, "DocIDs Push Filters", "[Replicator]") {
     config.replicatorType = kCBLReplicatorTypePush;
     
     auto docIDs = FLMutableArray_NewFromJSON("[\"foo1\"]"_sl, NULL);
-    configureCollectionConfigs(config, [docIDs](CBLCollectionConfiguration& colConfig) {
+    configureCollectionConfigs(config, [docIDs](CBLReplicationCollection& colConfig) {
         colConfig.documentIDs = docIDs;
     });
     
@@ -606,7 +788,7 @@ TEST_CASE_METHOD(ReplicatorLocalTest, "DocIDs Pull Filters", "[Replicator]") {
     config.replicatorType = kCBLReplicatorTypePull;
     
     auto docIDs = FLMutableArray_NewFromJSON("[\"foo1\"]"_sl, NULL);
-    configureCollectionConfigs(config, [docIDs](CBLCollectionConfiguration& colConfig) {
+    configureCollectionConfigs(config, [docIDs](CBLReplicationCollection& colConfig) {
         colConfig.documentIDs = docIDs;
     });
     
@@ -631,7 +813,7 @@ public:
             sourceCollection = db.getDefaultCollection();
             
             config.replicatorType = kCBLReplicatorTypePush;
-            configureCollectionConfigs(config, [](CBLCollectionConfiguration& colConfig) {
+            configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
                 colConfig.pushFilter = [](void *context, CBLDocument* doc, CBLDocumentFlags flags) -> bool {
                     ReplicatorFilterTest* test = ((ReplicatorFilterTest*)context);
                     return test->filter(context, doc, flags);
@@ -642,7 +824,7 @@ public:
             sourceCollection = otherDB.getDefaultCollection();
             
             config.replicatorType = kCBLReplicatorTypePull;
-            configureCollectionConfigs(config, [](CBLCollectionConfiguration& colConfig) {
+            configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
                 colConfig.pullFilter = [](void *context, CBLDocument* doc, CBLDocumentFlags flags) -> bool {
                     ReplicatorFilterTest* test = ((ReplicatorFilterTest*)context);
                     return test->filter(context, doc, flags);

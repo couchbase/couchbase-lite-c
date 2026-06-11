@@ -33,7 +33,7 @@ public:
 
     CBLReplicatorConfiguration config = {};
     
-    vector<CBLCollectionConfiguration> defaultCollectionConfigs = {};
+    vector<CBLReplicationCollection> defaultCollectionConfigs = {};
     
     CBLReplicator *repl = nullptr;
     
@@ -95,11 +95,11 @@ public:
     }
     
     /** A utility function to create a vector of collection configurations. */
-    std::vector<CBLCollectionConfiguration> collectionConfigs(
+    std::vector<CBLReplicationCollection> collectionConfigs(
         const std::vector<CBLCollection*>& collections,
-        std::function<void(CBLCollectionConfiguration&)> configure = nullptr
+        std::function<void(CBLReplicationCollection&)> configure = nullptr
     ) {
-        std::vector<CBLCollectionConfiguration> colConfigs(collections.size());
+        std::vector<CBLReplicationCollection> colConfigs(collections.size());
         for (size_t i = 0; i < collections.size(); i++) {
             colConfigs[i].collection = collections[i];
             if (configure) {
@@ -112,7 +112,7 @@ public:
     /** A utility function to (re)configure the current collection configuration. */
     inline void configureCollectionConfigs(
         CBLReplicatorConfiguration& cfg,
-        std::function<void(CBLCollectionConfiguration&)> configure
+        std::function<void(CBLReplicationCollection&)> configure
     ) {
         if (!configure) { return; };
         

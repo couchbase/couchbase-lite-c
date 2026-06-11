@@ -68,8 +68,8 @@ CBLEndpoint* URLEndpointListenerTest::clientEndpoint(CBLURLEndpointListener* lis
     return CBLEndpoint_CreateWithURL(slice(ss.str().c_str()), outError);
 }
 
-vector<CBLCollectionConfiguration> URLEndpointListenerTest::collectionConfigs(vector<CBLCollection*>collections) {
-    vector<CBLCollectionConfiguration> configs(collections.size());
+vector<CBLReplicationCollection> URLEndpointListenerTest::collectionConfigs(vector<CBLCollection*>collections) {
+    vector<CBLReplicationCollection> configs(collections.size());
     for (int i = 0; i < collections.size(); i++) {
         configs[i].collection = collections[i];
     }
@@ -113,7 +113,7 @@ CBLTLSIdentity* URLEndpointListenerTest::createTLSIdentity(bool isServer, bool w
 }
 
 void URLEndpointListenerTest::configOneShotReplicator(CBLURLEndpointListener* listener,
-                                                      std::vector<CBLCollectionConfiguration>& colConfigs) {
+                                                      std::vector<CBLReplicationCollection>& colConfigs) {
     createNumberedDocsWithPrefix(cx[0], 10, "doc");
     createNumberedDocsWithPrefix(cx[1], 10, "doc");
     expectedDocumentCount = 20;
@@ -792,7 +792,7 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "Anonymous Identity", "[URLListener]")
 
     // Starts a continuous replicator to the listener using wss URL and with accept only self-sign cert enabled. This step is valid to use a single shot replicator as well.
     
-    std::vector<CBLCollectionConfiguration> colConfigs;
+    std::vector<CBLReplicationCollection> colConfigs;
     configOneShotReplicator(listener, colConfigs);
     config.acceptOnlySelfSignedServerCertificate = true;
 
@@ -839,7 +839,7 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "Password Authenticator", "[URLListene
     CHECK(CBLURLEndpointListener_Start(listener, nullptr));
 
     // Start Replicator
-    std::vector<CBLCollectionConfiguration> colConfigs;
+    std::vector<CBLReplicationCollection> colConfigs;
     configOneShotReplicator(listener, colConfigs);
     
     SECTION("Without Client Auth") {
@@ -908,7 +908,7 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "Client Cert Callback Authenticator", 
     CHECK(CBLURLEndpointListener_Start(listener, nullptr));
 
     // Start Replicator
-    std::vector<CBLCollectionConfiguration> colConfigs;
+    std::vector<CBLReplicationCollection> colConfigs;
     configOneShotReplicator(listener, colConfigs);
     config.acceptOnlySelfSignedServerCertificate = true;
     
@@ -993,7 +993,7 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "Client Cert Authenticator with RootCe
     CBLCert*            clientCert = nullptr;
     CBLKeyPair*   clientPrivateKey = nullptr;
     
-    std::vector<CBLCollectionConfiguration> colConfigs;
+    std::vector<CBLReplicationCollection> colConfigs;
     configOneShotReplicator(listener, colConfigs);
 
     SECTION("Not Signed By the rootCerts") {
@@ -1186,7 +1186,7 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "Accept Only Self-Signed Certificate",
 
     // Replicator setup
 
-    std::vector<CBLCollectionConfiguration> colConfigs;
+    std::vector<CBLReplicationCollection> colConfigs;
     configOneShotReplicator(listener, colConfigs);
 
     SECTION("Self-Signed Only") {
@@ -1238,7 +1238,7 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "Listener Read Only", "[URLListener]")
     CHECK(CBLURLEndpointListener_Start(listener, nullptr));
 
     // Replicator
-    std::vector<CBLCollectionConfiguration> colConfigs;
+    std::vector<CBLReplicationCollection> colConfigs;
     configOneShotReplicator(listener, colConfigs);
     
     SECTION("Push Replicator") {

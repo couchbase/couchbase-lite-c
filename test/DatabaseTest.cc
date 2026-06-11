@@ -887,7 +887,7 @@ TEST_CASE_METHOD(DatabaseTest, "Close Database with Active Replicator") {
     
     // Start Replicator:
     auto endpoint = CBLEndpoint_CreateWithLocalDB(otherDB);
-    std::vector<CBLCollectionConfiguration> colConfigs = { { defaultCollection } };
+    std::vector<CBLReplicationCollection> colConfigs = { { defaultCollection } };
     
     CBLReplicatorConfiguration config = {};
     config.collections = colConfigs.data();
@@ -924,7 +924,7 @@ TEST_CASE_METHOD(DatabaseTest, "Delete Database with Active Replicator") {
     
     // Start Replicator:
     auto endpoint = CBLEndpoint_CreateWithLocalDB(otherDB);
-    std::vector<CBLCollectionConfiguration> colConfigs = { { defaultCollection } };
+    std::vector<CBLReplicationCollection> colConfigs = { { defaultCollection } };
     
     CBLReplicatorConfiguration config = {};
     config.collections = colConfigs.data();
