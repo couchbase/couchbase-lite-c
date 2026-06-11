@@ -16,8 +16,6 @@
 // limitations under the License.
 //
 
-// VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
-// future releases.
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -26,8 +24,6 @@
 #include "cbl/CBLPrediction.h"
 #include <string_view>
 
-// VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
-// future releases.
 
 CBL_ASSUME_NONNULL_BEGIN
 
