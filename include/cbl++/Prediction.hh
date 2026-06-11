@@ -28,20 +28,17 @@
 CBL_ASSUME_NONNULL_BEGIN
 
 namespace cbl {
-    /** ENTERPRISE EDITION ONLY
-     
-        The PredictiveModel  that allows to integrate machine learning model
-        into queries via invoking query's PREDICTION() function.
-     
-        @note The predictive index feature is not supported by Couchbase Lite for C.
+    /** A predictive model callable that integrates a machine learning model into queries,
+        invoked via the query's PREDICTION() function. Given an input dictionary, return the
+        output dictionary.
+        \note ENTERPRISE EDITION ONLY
+        \note The predictive index feature is not supported by Couchbase Lite for C.
               The Predictive Model is currently for creating vector indexes using the PREDICTION() function,
               which will call the specified predictive model for computing the vectors. */
-
-    /** A predictive model callable, invoked by queries via the PREDICTION() function.
-        Given an input dictionary, return the output dictionary. */
     using PredictiveModel = std::function<fleece::MutableDict(fleece::Dict)>;
 
-    /** Registers/unregisters predictive models by name. */
+    /** Registers/unregisters predictive models by name.
+        \note ENTERPRISE EDITION ONLY */
     class Prediction {
     public:
         /** Registers a predictive model with the given name.
