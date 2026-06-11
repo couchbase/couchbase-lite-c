@@ -1,13 +1,13 @@
 pipeline {
     agent none
     options {
-        timeout(time: 30, unit: 'MINUTES') 
+        timeout(time: 60, unit: 'MINUTES') 
     }
     stages {
         stage("Build and Test") {
             parallel {
                 stage("Windows") {
-                   agent { label 'mobile-dotnet-windows2022-01' }
+                   agent { label 'couchbase-lite-net-validation' }
                    environment {
                        BRANCH = "${BRANCH_NAME}"
                    }
