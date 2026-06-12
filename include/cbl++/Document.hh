@@ -29,7 +29,7 @@ CBL_ASSUME_NONNULL_BEGIN
 namespace cbl {
     class MutableDocument;
 
-    /** Immutable Document. */
+    /** An immutable, in-memory copy of a document read from a collection. */
     class Document : protected RefCounted {
     public:
         // Metadata:
@@ -97,7 +97,7 @@ namespace cbl {
     };
 
 
-    /** Mutable Document. */
+    /** A mutable document, whose properties can be modified and saved to a collection. */
     class MutableDocument : public Document {
     public:
         /** Creates a new, empty document in memory, with a randomly-generated unique ID.

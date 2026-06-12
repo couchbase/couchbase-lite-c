@@ -351,7 +351,7 @@ CBLListenerToken* CBLDatabase_AddChangeListener(const CBLDatabase* db,
 #ifdef __APPLE__
 #pragma mark - NOTIFICATION SCHEDULING
 #endif
-/** \defgroup listeners   Listeners
+/** \addtogroup listeners
     @{ */
 /** \name  Scheduling notifications
     @{
