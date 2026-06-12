@@ -52,9 +52,8 @@ namespace cbl {
 
     
 #ifdef COUCHBASE_ENTERPRISE
-    /** ENTERPRISE EDITION ONLY
-     
-        Couchbase Lite  Extension. */
+    /** Manages Couchbase Lite extensions, such as the Vector Search extension.
+        \note ENTERPRISE EDITION ONLY */
     class Extension {
     public:
         /** Enables Vector Search extension by specifying the extension path to search for the Vector Search extension library.
@@ -72,10 +71,9 @@ namespace cbl {
     /** Alias for the C \ref CBLEncryptionKeySize enum giving the required key size for an algorithm. */
     using EncryptionKeySize   = CBLEncryptionKeySize;
 
-    /** ENTERPRISE EDITION ONLY
-
-        A database encryption key, used in \ref DatabaseConfiguration to open or create an
-        encrypted database. */
+    /** A database encryption key, used in \ref DatabaseConfiguration to open or create an
+        encrypted database.
+        \note ENTERPRISE EDITION ONLY */
     class EncryptionKey : public CBLEncryptionKey {
     public:
         /** Creates an empty key (algorithm \ref kCBLEncryptionNone, i.e. no encryption). */
@@ -147,7 +145,7 @@ namespace cbl {
         }
     };
 
-    /** Couchbase Lite Database. */
+    /** A Couchbase Lite database, which is a container for collections of documents. */
     class Database : private RefCounted {
     public:
         // Static database-file operations:

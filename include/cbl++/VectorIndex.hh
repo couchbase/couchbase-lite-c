@@ -29,12 +29,13 @@
 CBL_ASSUME_NONNULL_BEGIN
 
 namespace cbl {
-    /** ENTERPRISE EDITION ONLY
-     
-        Vector Encoding  Type*/
-
+    /** The distance metric used by a vector index to measure the similarity of vectors.
+        \note ENTERPRISE EDITION ONLY */
     using DistanceMetric = CBLDistanceMetric;
 
+    /** Vector encoding type to use in a \ref VectorIndexConfiguration, for reducing the
+        size of the stored vectors.
+        \note ENTERPRISE EDITION ONLY */
     class VectorEncoding {
     public:
         /** Creates a no-encoding type to use in VectorIndexConfiguration; 4 bytes per dimension, no data loss.
@@ -77,9 +78,9 @@ namespace cbl {
         std::shared_ptr<CBLVectorEncoding> _ref;
     };
 
-    /** ENTERPRISE EDITION ONLY
-     
-        Vector Index Configuration. */
+    /** Configuration for creating a vector index, which enables searching documents
+        by vector similarity.
+        \note ENTERPRISE EDITION ONLY */
     class VectorIndexConfiguration {
     public:
         /** Creates the VectorIndexConfiguration. 
