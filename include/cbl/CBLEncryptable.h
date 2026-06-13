@@ -35,7 +35,7 @@ CBL_CAPI_BEGIN
     whose value is the actual value to be encrypted by the push replicator.
  
     The push replicator will automatically detect \ref CBLEncryptable dictionaries inside
-    the document and calls the specified \ref CBLDocumentPropertyEncryptor callback to encrypt the
+    the document and call the specified \ref CBLDocumentPropertyEncryptor callback to encrypt the
     actual value. When the value is successfully encrypted, the replicator will transform
     the property key and the encrypted \ref CBLDocumentPropertyEncryptor dictionary value into
     Couchbase Server SDK's encrypted field format :
@@ -47,7 +47,7 @@ CBL_CAPI_BEGIN
       encrypted value, and optionally `kid` property indicating the encryption key identifier
       if specified when returning the result of \ref CBLDocumentPropertyEncryptor callback call.
     
-    For security reason, a document that contains CBLEncryptable dictionaries will fail
+    For security reasons, a document that contains CBLEncryptable dictionaries will fail
     to push with the \ref kCBLErrorCrypto error if their value cannot be encrypted including
     when a \ref CBLDocumentPropertyEncryptor callback is not specified or when there is an error
     or a null result returned from the callback call.
@@ -58,7 +58,7 @@ CBL_CAPI_BEGIN
     the replicator will transform the property format back to the CBLEncryptable format
     including removing the 'encrypted$' prefix.
  
-    The \ref CBLDocumentPropertyDecryptor callback can intentionally skip the decryption by returnning a
+    The \ref CBLDocumentPropertyDecryptor callback can intentionally skip the decryption by returning a
     null result. When a decryption is skipped, the encrypted property in the form of
     Couchbase Server SDK's encrypted field format will be kept as it was received from the remote
     server. If an error is returned from the callback call, the document will be failed to pull with
@@ -66,7 +66,7 @@ CBL_CAPI_BEGIN
  
     If a \ref CBLDocumentPropertyDecryptor callback is not specified, the replicator will not attempt to
     detect any encrypted properties. As a result, all encrypted properties in the form of
-    Couchbase Server SDK's encrypted field format will be kept as they was received from the remote
+    Couchbase Server SDK's encrypted field format will be kept as they were received from the remote
     server.
     
     To create a new \ref CBLEncryptable, call CBLEncryptable_CreateWith<Value Type>

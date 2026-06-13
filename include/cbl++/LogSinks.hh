@@ -44,7 +44,7 @@ namespace cbl {
     /** Custom log sink configuration for logging to a user-defined callback. */
     struct CustomLogSink {
         LogLevel level = kCBLLogNone;            ///< The minimum level of message to write (Required).
-        LogSinkCallback _cbl_nullable callback;  ///< Custom log callback (Required).
+        LogSinkCallback _cbl_nullable callback;  ///< Custom log callback.
         LogDomainMask domains;                   ///< Bitmask for enabled log domains. Use zero for all domains.
 
         operator CBLCustomLogSink() const {

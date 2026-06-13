@@ -318,7 +318,7 @@ CBLTLSIdentity* _cbl_nullable CBLTLSIdentity_CreateIdentity(CBLKeyUsages keyUsag
     @param outError On failure, the error will be written here.
     @return A CBLTLSIdentity instance on success, or NULL on failure.
     @note The Common Name (kCBLCertAttrKeyCommonName) attribute is required.
-    @note You are responsible for releasig the returned reference. */
+    @note You are responsible for releasing the returned reference. */
 _cbl_warn_unused
 CBLTLSIdentity* _cbl_nullable CBLTLSIdentity_CreateIdentityWithKeyPair(CBLKeyUsages keyUsages,
                                                                        CBLKeyPair* keypair,

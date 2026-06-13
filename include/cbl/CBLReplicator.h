@@ -263,7 +263,7 @@ typedef struct {
     //-- Required fields:
     
     /** The collections to replicate with the target's endpoint (Required).  */
-    CBLCollectionConfiguration* _cbl_nullable collections;
+    CBLCollectionConfiguration* collections;
     
     /** The number of collections (Required).
         Must match the number of items in `collections`. */
