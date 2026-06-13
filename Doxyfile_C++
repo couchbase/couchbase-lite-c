@@ -16,6 +16,8 @@ OUTPUT_DIRECTORY       = docs/C++/
 INPUT                  = include/cbl++
 FILE_PATTERNS          = *.hh
 
+BUILTIN_STL_SUPPORT = YES
+
 # C++ output: turn off the C-tailored mode so classes/namespaces render properly.
 OPTIMIZE_OUTPUT_FOR_C  = NO
 
@@ -41,3 +43,14 @@ PREDEFINED            += _cbl_nullable=_Nullable \
                          CBL_ASSUME_NONNULL_BEGIN= \
                          CBL_ASSUME_NONNULL_END= \
                          _cbl_warn_unused=
+
+# Don't generate a tag file from the C++ build; the parent Doxyfile's
+# GENERATE_TAGFILE=docs/C/cbl_c.tag is inherited via @INCLUDE and would
+# otherwise overwrite the C tag file when this Doxyfile is run after it.
+GENERATE_TAGFILE       =
+
+# Cross-link to the C docs. The parent Doxyfile emits docs/C/cbl_c.tag; with
+# OUTPUT_DIRECTORY=docs/C/ and HTML_OUTPUT=html for the C build, and the C++
+# pages landing in docs/C++/html/, the relative path from a C++ page to a C
+# page is ../../C/html.
+TAGFILES               = docs/C/cbl_c.tag=../../C/html

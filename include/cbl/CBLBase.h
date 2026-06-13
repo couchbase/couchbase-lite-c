@@ -153,7 +153,7 @@ typedef struct CBLRefCounted CBLRefCounted;
 
 /** Increments an object's reference-count.
     Usually you'll call one of the type-safe synonyms specific to the object type,
-    like \ref CBLDatabase_Retain` */
+    like \ref CBLDatabase_Retain. */
 CBLRefCounted* CBL_Retain(CBLRefCounted* _cbl_nullable) CBLAPI;
 
 /** Decrements an object's reference-count, freeing the object if the count hits zero.
