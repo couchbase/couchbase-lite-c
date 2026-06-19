@@ -117,7 +117,7 @@ namespace cbl {
         /** Returns a mutable document's properties as a mutable dictionary.
             You may modify this dictionary and then call \ref Collection::saveDocument(MutableDocument &doc) to persist the changes.
             @note  When accessing nested collections inside the properties as a mutable collection
-                   for modification, use \ref MutableDict::getMutableDict() or \ref MutableDict::getMutableArray() */
+                   for modification, use `fleece::MutableDict::getMutableDict()` or `fleece::MutableDict::getMutableArray()` */
         fleece::MutableDict properties()                {return CBLDocument_MutableProperties(ref());}
 
         /** Sets a property key and value.
