@@ -165,7 +165,7 @@ namespace cbl {
         inline Document getDocument(std::string_view docID) const;
         
         /** Reads a document from the collection in mutable form that can be updated and saved.
-            (This function is otherwise identical to \ref Collection::getDocument(slice docID).)
+            (This function is otherwise identical to \ref Collection::getDocument.)
             @param docID  The ID of the document.
             @return A new \ref Document instance, or a falsy Document if the doc doesn't exist.
             @throws cbl::Error  On a database error. Note a non-existent document is not an
@@ -213,7 +213,7 @@ namespace cbl {
         /** Purges a document from the collection. This removes all traces of the document.
             Purges are _not_ replicated. If the document is changed on a server, it will be re-created
             when pulled.
-            @note If you don't have the document in memory already, \ref purgeDocument(slice docID) is a simpler shortcut.
+            @note If you don't have the document in memory already, \ref purgeDocument(std::string_view docID) is a simpler shortcut.
             @param doc  The document to purge. */
         inline void purgeDocument(Document &doc);
 
@@ -229,7 +229,7 @@ namespace cbl {
         }
         
         /** Returns the time, if any, at which a given document in the collection will expire and be purged.
-            Documents don't normally expire; you have to call \ref Collection::setDocumentExpiration(slice docID, time_t expiration)
+            Documents don't normally expire; you have to call \ref Collection::setDocumentExpiration(std::string_view docID, time_t expiration)
             to set a document's expiration time.
             @param docID  The ID of the document.
             @return The expiration time as a CBLTimestamp (milliseconds since Unix epoch),

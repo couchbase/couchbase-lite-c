@@ -42,10 +42,11 @@ namespace cbl {
             \ref Query object around instead of compiling it each time. If you need to run related queries
             with only some values different, create one query with placeholder parameter(s), and substitute
             the desired value(s) with \ref Query::setParameters(fleece::Dict parameters) each time you run the query.
-            @warning <b>Deprecated :</b> Use Database::createQuery(CBLQueryLanguage language, slice queryString) instead.
+            @warning <b>Deprecated :</b> Use \ref Database::createQuery instead.
             @note The JSON query language is a volatile API. Volatile APIs are experimental and may likely be changed.
                   They may also be used to indicate inherently private APIs that may be exposed, but "YMMV"
                   (your mileage may vary) principles apply.
+            @param db  The database the query runs against.
             @param language  The query language
             @param queryString  The query string.
          */
@@ -71,7 +72,7 @@ namespace cbl {
             Parameters are specified in the query source as
             e.g. `$PARAM` (N1QL) or `["$PARAM"]` (JSON). In this example, the `parameters` dictionary
             to this call should have a key `PARAM` that maps to the value of the parameter.
-            @param parameters  The parameters in the form of a Fleece \ref Dict "dictionary" whose
+            @param parameters  The parameters in the form of a Fleece `Dict` (dictionary) whose
                     keys are the parameter names. (It's easiest to construct this by using the fleece::MutableDict) */
         void setParameters(fleece::Dict parameters) {CBLQuery_SetParameters(ref(), parameters);}
         

@@ -408,7 +408,7 @@ namespace cbl {
         /** Indicates whether the document with the given ID in the given collection has local changes
             that have not yet been pushed to the server by this replicator.
          
-            This is equivalent to, but faster than, calling \ref Replicator::pendingDocumentIDs(Collection& collection) and
+            This is equivalent to, but faster than, calling \ref Replicator::pendingDocumentIDs and
             checking whether the result contains \p docID. See that function's documentation for details.
             @note A `false` result means the document is not pending, _or_ there was an error.
                   To tell the difference, compare the error code to zero.
@@ -475,22 +475,33 @@ namespace cbl {
         CBL_REFCOUNTED_WITHOUT_COPY_MOVE_BOILERPLATE(Replicator, RefCounted, CBLReplicator)
         
     public:
+        /** Copy constructor. Both `*this` and `other` refer to the same underlying
+            \ref CBLReplicator handle (its refcount is incremented) and share the
+            collection-configuration map. */
         Replicator(const Replicator &other) noexcept
         :RefCounted(other)
         ,_collectionMap(other._collectionMap)
         { }
-        
+
+        /** Move constructor. Takes over `other`'s \ref CBLReplicator handle and
+            collection-configuration map, leaving `other` empty. */
         Replicator(Replicator &&other) noexcept
         :RefCounted((RefCounted&&)other)
         ,_collectionMap(std::move(other._collectionMap))
         { }
-        
+
+        /** Copy assignment. Releases the currently-referenced handle (if any), then
+            makes `*this` refer to the same \ref CBLReplicator as `other` (refcount
+            incremented) and share its collection-configuration map. */
         Replicator& operator=(const Replicator &other) noexcept {
             RefCounted::operator=(other);
             _collectionMap = other._collectionMap;
             return *this;
         }
-        
+
+        /** Move assignment. Releases the currently-referenced handle (if any), then
+            takes over `other`'s \ref CBLReplicator handle and collection-configuration
+            map; `other` is left empty. */
         Replicator& operator=(Replicator &&other) noexcept {
             RefCounted::operator=((RefCounted&&)other);
             _collectionMap = std::move(other._collectionMap);
@@ -498,7 +509,8 @@ namespace cbl {
         }
         
         /** Releases the underlying C \ref CBLReplicator and drops the C++ collection-configuration
-            map. After this call the object is empty (\ref operator bool returns false). */
+            map. After this call the object is empty (its \ref Replicator::operator bool() const
+            returns false). */
         void clear() {
             RefCounted::clear();
             _collectionMap.reset();
