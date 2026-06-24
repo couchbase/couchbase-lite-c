@@ -19,6 +19,7 @@
 #include "CBLTest_Cpp.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Mutable.hh"
+#include <atomic>
 #include <string>
 #include <chrono>
 #include <thread>
@@ -545,7 +546,7 @@ TEST_CASE_METHOD(ReplicatorPropertyEncryptionTest_Cpp, "C++ Key ID and Algorithm
     }
 }
 
-TEST_CASE_METHOD(ReplicatorPropertyEncryptionTest_Cpp, "C++ Encrypt and decrypt with multipe collections",
+TEST_CASE_METHOD(ReplicatorPropertyEncryptionTest_Cpp, "C++ Encrypt and decrypt with multiple collections",
                  "[Replicator][Encryptable]") {
     auto c1x = db.createCollection("colA", "scopeA");
     auto c2x = db.createCollection("colB", "scopeA");

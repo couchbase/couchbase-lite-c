@@ -417,7 +417,7 @@ namespace cbl {
                                                         CBLError* error) -> FLSliceResult {
                     auto ctx = (ReplicatorContext*)context;
                     auto r = ctx->encryptor(scope, collection, documentID, properties, keyPath, input);
-                    if (error)                              *error     = r.error;
+                    if (error)                    *error     = r.error;
                     if (algorithm && r.algorithm) *algorithm = FLStringResult(slice(*r.algorithm));
                     if (keyID     && r.keyID)     *keyID     = FLStringResult(slice(*r.keyID));
                     return FLSliceResult(r.ciphertext);

@@ -96,7 +96,10 @@ namespace cbl {
     /** Sets this encryptable value into @p dict under @p key.
         Equivalent to the C API `FLMutableDict_SetEncryptableValue`. */
     void setInto(fleece::MutableDict dict, fleece::slice key) const {
-        fleece::MutableDict mProps = properties().asMutable();
+        fleece::Dict props = properties();
+        fleece::MutableDict mProps = props.asMutable();
+        if (!mProps)
+            mProps = props.mutableCopy();
         dict[key] = mProps;
     }
 
