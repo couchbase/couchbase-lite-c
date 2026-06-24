@@ -93,6 +93,13 @@ namespace cbl {
     /** Returns the Encryptable's underlying dictionary representation (its persistent form). */
     fleece::Dict properties() const {return CBLEncryptable_Properties(ref());}
 
+    /** Sets this encryptable value into @p dict under @p key.
+        Equivalent to the C API `FLMutableDict_SetEncryptableValue`. */
+    void setInto(fleece::MutableDict dict, fleece::slice key) const {
+        fleece::MutableDict mProps = properties().asMutable();
+        dict[key] = mProps;
+    }
+
     /** Returns true if the given dictionary is the persistent form of an Encryptable.
         @param dict  The dictionary to test. */
     static bool isEncryptableValue(fleece::Dict dict) {
