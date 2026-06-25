@@ -72,7 +72,7 @@ jobs:
       shell: bash
       run: |
         pushd build/test
-        ./CBL_C_Tests -r list
+        ./CBL_C_Tests -r quiet
         popd
 
     - name: Test On Windows

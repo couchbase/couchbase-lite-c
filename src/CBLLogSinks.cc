@@ -43,6 +43,7 @@ CBLFileLogSink CBLLogSinks::_sFileSink { kCBLLogNone, kFLSliceNull };
 alloc_slice CBLLogSinks::_sLogFileDir;
 
 std::shared_mutex CBLLogSinks::_sMutex;
+std::mutex        CBLLogSinks::_sStreamOutputMutex;
 
 static const char* kC4LogDomains[] = { "DB", "Query", "Sync", "WS", "Listener", "SyncBusy",
                                        "Changes", "BLIPMessages", "TLS", "Zip" };
@@ -229,9 +230,12 @@ void CBLLogSinks::logToConsoleLogSink(CBLConsoleLogSink& consoleSink,
     __android_log_write(androidLevels[(int) level], tag.c_str(), msg);
 #else
     ostream& os = level < kCBLLogWarning ? cout : cerr;
-    LogDecoder::writeTimestamp(LogDecoder::now(), os);
-    LogDecoder::writeHeader(levelName, domainName.c_str(), os);
-    os << msg << '\n';
+    {
+        std::scoped_lock lock(_sStreamOutputMutex);
+        LogDecoder::writeTimestamp(LogDecoder::now(), os);
+        LogDecoder::writeHeader(levelName, domainName.c_str(), os);
+        os << msg << '\n';
+    }
 #endif
 }
 

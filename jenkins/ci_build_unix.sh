@@ -78,7 +78,7 @@ fi
 
 if [[ -z ${SKIP_TESTS} ]] && [[ ${EDITION} == 'enterprise' ]]; then
     cd ${WORKSPACE}/build_release/${project_dir}/test
-    ./CBL_C_Tests || exit 1
+    ./CBL_C_Tests -r quiet || exit 1
 fi
 
 cd ${WORKSPACE}
