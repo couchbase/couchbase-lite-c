@@ -1,0 +1,43 @@
+# Doxyfile for the Couchbase Lite C++ API (include/cbl++).
+#
+# Inherits all settings from the C Doxyfile via @INCLUDE, then overrides only what
+# the header-only C++ wrapper needs. Run from the repo root, AFTER `doxygen`:
+#
+#     doxygen              # C   API -> docs/C/html
+#     doxygen Doxyfile_C++ # C++ API -> docs/C++/html
+
+@INCLUDE = Doxyfile
+
+PROJECT_NAME           = "Couchbase Lite C++"
+PROJECT_BRIEF          = "Couchbase Lite C++ API"
+OUTPUT_DIRECTORY       = docs/C++/
+
+# Document only the inline C++ wrapper headers.
+INPUT                  = include/cbl++
+FILE_PATTERNS          = *.hh
+
+# C++ output: turn off the C-tailored mode so classes/namespaces render properly.
+OPTIMIZE_OUTPUT_FOR_C  = NO
+
+# Expand the ref-counting boilerplate macros so the generated members
+# (constructors, ref(), operator bool, ==) appear in the docs.
+EXPAND_AS_DEFINED     += CBL_REFCOUNTED_BOILERPLATE \
+                         CBL_REFCOUNTED_WITHOUT_COPY_MOVE_BOILERPLATE
+
+# Required for EXPAND_AS_DEFINED above to take effect: the cbl++ headers include
+# the macros' definitions as "cbl++/Base.hh", a path the preprocessor can only
+# resolve relative to include/. Without this, the macros silently never expand.
+INCLUDE_PATH           = include
+
+# Implementation details that are not part of the public API.
+EXCLUDE_SYMBOLS        = cbl::RefCounted \
+                         cbl::internal
+
+# The cbl++ headers pull these annotation macros from cbl/ (not in INPUT here);
+# left undefined, they leak verbatim into rendered signatures. _cbl_nullable is
+# rendered as clang's _Nullable so the docs convey nullability; the rest are
+# blanked out.
+PREDEFINED            += _cbl_nullable=_Nullable \
+                         CBL_ASSUME_NONNULL_BEGIN= \
+                         CBL_ASSUME_NONNULL_END= \
+                         _cbl_warn_unused=

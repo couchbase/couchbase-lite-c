@@ -31,7 +31,7 @@ namespace cbl {
     class IndexUpdater;
 #endif
 
-    /** QueryIndex object representing an existing index in the collection. */
+    /** Represents an existing index in a collection. */
     class QueryIndex : private RefCounted {
     public:
         // Accessors:
@@ -45,10 +45,9 @@ namespace cbl {
 #ifdef COUCHBASE_ENTERPRISE
         // Index Updater:
         
-        /** ENTERPRISE EDITION ONLY
-         
-            Finds new or updated documents for which vectors need to be (re)computed and returns an \ref IndexUpdater object
+        /** Finds new or updated documents for which vectors need to be (re)computed and returns an \ref IndexUpdater object
             for setting the computed vectors to update the index. If the index is not lazy, an error will be returned.
+            \note ENTERPRISE EDITION ONLY
             @note For updating lazy vector indexes only.
             @param limit The maximum number of vectors to be computed.
             @return An \ref IndexUpdater object for setting the computed vectors to update the index,
@@ -72,10 +71,10 @@ namespace cbl {
 
 #ifdef COUCHBASE_ENTERPRISE
 
-    /** ENTERPRISE EDITION ONLY
-     
-        IndexUpdater is used for updating the index in lazy mode. Currently, the vector index is the only index type
-        that can be updated lazily. */
+    /** Updates a lazy index by setting the computed vectors for the documents returned from
+        \ref QueryIndex::beginUpdate. Currently, the vector index is the only index type that
+        can be updated lazily.
+        \note ENTERPRISE EDITION ONLY */
     class IndexUpdater : private RefCounted {
     public:
         /** The total number of vectors to compute and set for updating the index. */

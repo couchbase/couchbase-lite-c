@@ -37,7 +37,8 @@ namespace cbl {
         An Encryptable wraps a value (null, bool, number, string, array, dict) that should
         be encrypted by the push replicator and decrypted by the pull replicator. Its
         persistent form is a special dictionary in the document properties; construct an
-        Encryptable from such a dictionary via Encryptable::getEncryptableValue. */
+        Encryptable from such a dictionary via Encryptable::getEncryptableValue.
+        \note ENTERPRISE EDITION ONLY */
     class Encryptable : protected RefCounted {
     public:
     /** Creates an Encryptable wrapping an arbitrary Fleece value.

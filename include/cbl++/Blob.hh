@@ -123,7 +123,7 @@ namespace cbl {
         Blob(CBLBlob* cObj, adopt_t) { _ref = (CBLRefCounted*)cObj; }
     };
 
-    /** A stream for writing a new blob to the database. */
+    /** A stream for reading a blob's content from the database. */
     class BlobReadStream {
     public:
         /** Alias for the C \ref CBLSeekBase enum describing the reference point used by \ref seek. */

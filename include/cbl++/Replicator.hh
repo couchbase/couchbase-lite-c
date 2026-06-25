@@ -116,7 +116,8 @@ namespace cbl {
                                                     const Document localDoc,
                                                     const Document remoteDoc)>;
 
-    /** The collection and the configuration that can be configured specifically for the replication. */
+    /** A collection to replicate, along with its collection-specific replication settings
+        such as filters and a conflict resolver. */
     class CollectionConfiguration {
     public:
         /** Creates CollectionConfiguration with the collection. */
@@ -266,7 +267,7 @@ namespace cbl {
         std::vector<CollectionConfiguration> _collections;
     };
 
-    /** Replicator for replicating documents in collections in local database and targeted database. */
+    /** A replicator that syncs documents between a local database's collections and a target database. */
     class Replicator : private RefCounted {
     public:
         /** Creates a new replicator using the specified config. */
