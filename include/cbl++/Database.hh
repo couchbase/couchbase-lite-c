@@ -34,8 +34,6 @@
 #include <string_view>
 #include <vector>
 
-// VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
-// future releases.
 
 CBL_ASSUME_NONNULL_BEGIN
 
@@ -445,22 +443,33 @@ namespace cbl {
         std::shared_ptr<NotificationsReadyCallbackAccess> _notificationReadyCallbackAccess;
         
     public:
+        /** Copy constructor. Both `*this` and `other` refer to the same underlying
+            \ref CBLDatabase handle (its refcount is incremented) and share the
+            buffered-notification callback state. */
         Database(const Database &other) noexcept
         :RefCounted(other)
         ,_notificationReadyCallbackAccess(other._notificationReadyCallbackAccess)
         { }
-        
+
+        /** Move constructor. Takes over `other`'s \ref CBLDatabase handle and
+            buffered-notification callback state, leaving `other` empty. */
         Database(Database &&other) noexcept
         :RefCounted((RefCounted&&)other)
         ,_notificationReadyCallbackAccess(std::move(other._notificationReadyCallbackAccess))
         { }
-        
+
+        /** Copy assignment. Releases the currently-referenced handle (if any), then
+            makes `*this` refer to the same \ref CBLDatabase as `other` (refcount
+            incremented) and share its buffered-notification callback state. */
         Database& operator=(const Database &other) noexcept {
             RefCounted::operator=(other);
             _notificationReadyCallbackAccess = other._notificationReadyCallbackAccess;
             return *this;
         }
-        
+
+        /** Move assignment. Releases the currently-referenced handle (if any), then
+            takes over `other`'s \ref CBLDatabase handle and buffered-notification
+            callback state; `other` is left empty. */
         Database& operator=(Database &&other) noexcept {
             RefCounted::operator=((RefCounted&&)other);
             _notificationReadyCallbackAccess = std::move(other._notificationReadyCallbackAccess);
@@ -468,7 +477,7 @@ namespace cbl {
         }
         
         /** Releases the underlying C \ref CBLDatabase handle and drops the buffered-notification
-            callback. After this call the object is empty (\ref operator bool returns false).
+            callback. After this call the object is empty (its `operator bool` returns false).
             @note Other \ref Database references to the same database file remain valid. */
         void clear() {
             // Reset _notificationReadyCallbackAccess the releasing the _ref to
