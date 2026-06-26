@@ -34,6 +34,7 @@ function(set_test_source_files)
         ${T_DIR}/ReplicatorCollectionTest_Cpp.cc
         ${T_DIR}/ReplicatorEETest.cc
         ${T_DIR}/ReplicatorPropEncTest.cc
+        ${T_DIR}/ReplicatorPropEncTest_Cpp.cc
         ${T_DIR}/ReplicatorTest.cc
         ${T_DIR}/TLSIdentityTest.cc
         ${T_DIR}/URLEndpointListenerTest.cc
