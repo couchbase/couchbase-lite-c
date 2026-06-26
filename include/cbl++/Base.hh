@@ -31,8 +31,6 @@
 #include "cbl/CBLLog.h"
 #endif
 
-// VOLATILE API: Couchbase Lite C++ API is not finalized, and may change in
-// future releases.
 
 CBL_ASSUME_NONNULL_BEGIN
 
@@ -47,9 +45,9 @@ inline bool operator== (const CBLError &e1, const CBLError &e2) {
 
 namespace cbl {
 
-    /** Convenience alias for \ref fleece::slice, a non-owning view of a byte range. */
+    /** Convenience alias for `fleece::slice`, a non-owning view of a byte range. */
     using slice = fleece::slice;
-    /** Convenience alias for \ref fleece::alloc_slice, an owning byte buffer. */
+    /** Convenience alias for `fleece::alloc_slice`, an owning byte buffer. */
     using alloc_slice = fleece::alloc_slice;
 
     using QueryLanguage = CBLQueryLanguage;
@@ -172,7 +170,7 @@ public: \
     CLASS& operator=(CLASS &&other) noexcept      {SUPER::operator=((SUPER&&)other); return *this;}
 
     /** A token representing a registered listener; instances are returned from the various
-        methods that register listeners, such as \ref Database::addListener.
+        methods that register listeners, such as \ref Collection::addChangeListener.
         When this object goes out of scope, the listener will be unregistered.
         @note ListenerToken is not allowed to copy. */
     template <class... Args>
