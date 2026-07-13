@@ -53,7 +53,7 @@ make -j `expr $core_count + 1`
 
 # Run Tests
 pushd test > /dev/null
-./CBL_C_Tests -r list
+./CBL_C_Tests -r quiet
 popd > /dev/null
 
 popd > /dev/null

@@ -59,6 +59,16 @@ private:
     static fleece::alloc_slice _sLogFileDir;
     
     static std::shared_mutex _sMutex;
+
+    // Serializes all writes to std::cout/std::cerr across threads.
+    // Two distinct benefits:
+    // 1. Production: a log entry spans multiple << writes (timestamp, header, message);
+    //    without a lock, concurrent threads interleave these into garbled output.
+    // 2. Testing (Catch2): some reporters replace cout/cerr's rdbuf with a non-thread-safe
+    //    std::ostringstream to capture output; concurrent writes without a lock cause
+    //    heap corruption (e.g. ASan heap-use-after-free during buffer reallocation).
+    // Note: Android logging uses __android_log_write (a syscall) and does not need this lock.
+    static std::mutex _sStreamOutputMutex;
     
     static const std::vector<C4LogDomain>& c4LogDomains();
     static C4LogDomain toC4LogDomain(CBLLogDomain);
