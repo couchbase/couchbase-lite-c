@@ -97,7 +97,7 @@ struct TLSIdentityTest::ExternalKey::Impl {
         // Converting it into the DER format LiteCore expects.
         CBLKeyPair* publicKey = CBLKeyPair_PublicKeyFromData(dataSlice, nullptr);
         if (!publicKey) {
-            CBL_Log(kCBLLogDomainListener, kCBLLogError, "Error from PublickKeyFromData");
+            CBL_Log(kCBLLogDomainListener, kCBLLogError, "Error from PublicKeyFromData");
             CFRelease(data);
             return std::nullopt;
         }
