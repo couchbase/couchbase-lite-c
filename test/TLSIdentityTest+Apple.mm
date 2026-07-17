@@ -115,7 +115,7 @@ struct TLSIdentityTest::ExternalKey::Impl {
         @autoreleasepool {
             CBL_Log(kCBLLogDomainListener, kCBLLogInfo, "Decrypting using Keychain private key");
             NSData* data = uncopiedNSData(input);
-            CFErrorRef error;
+            CFErrorRef error{nullptr};
             NSData* cleartext = CFBridgingRelease( SecKeyCreateDecryptedData(_privateKeyRef,
                                                          kSecKeyAlgorithmRSAEncryptionPKCS1,
                                                          (CFDataRef)data, &error) );
