@@ -224,20 +224,19 @@ namespace cbl {
 
         // Shared by the publicKeyData/decrypt trampolines in createWithExternalKey: copies
         // result into output (bounded by outputMaxLen) and sets outputLen.
-static bool copyResult(const std::optional<alloc_slice>& result, void* output, size_t outputMaxLen,
-                       size_t* outputLen) {
-    if ( !outputLen ) return false;
-    if ( !result ) {
-        *outputLen = 0;
-        return false;
-    }
+        static bool copyResult(const std::optional<alloc_slice>& result, void* output, size_t outputMaxLen,
+                               size_t* outputLen) {
+            if ( !outputLen ) return false;
+            if ( !result ) {
+                *outputLen = 0;
+                return false;
+            }
 
-    *outputLen = result->size;
-    if ( result->size > outputMaxLen || (result->size > 0 && !output) ) return false;
+            *outputLen = result->size;
+            if ( result->size > outputMaxLen || (result->size > 0 && !output) ) return false;
 
-    if ( result->size > 0 ) memcpy(output, result->buf, result->size);
-    return true;
-}
+            if ( result->size > 0 ) memcpy(output, result->buf, result->size);
+            return true;
         }
 
         // Invokes fn, catching and logging any exception it throws. Required because the C API
