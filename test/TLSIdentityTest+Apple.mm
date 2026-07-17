@@ -19,6 +19,7 @@
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
 #include "TLSIdentityTest.hh"
+#include <optional>
 #include <sstream>
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -47,12 +48,50 @@ struct TLSIdentityTest::ExternalKey::Impl {
         CFRelease(_privateKeyRef);
     }
 
+    // Raw-buffer callbacks, used by the C API test (TLSIdentityTest.cc). Each is a thin
+    // wrapper that copies the result of the corresponding C++ API method (below) into the
+    // caller-supplied buffer.
+
     bool publicKeyData(void* output, size_t outputMaxLen, size_t* outputLen) {
+        auto result = publicKeyData();
+        if (!result) return false;
+        *outputLen = result->size;
+        if (*outputLen > outputMaxLen) {
+            CBL_Log(kCBLLogDomainListener, kCBLLogError, "Key size is too big to put in the output");
+            return false;
+        }
+        result->copyTo(output);
+        return true;
+    }
+
+    bool decrypt(fleece::slice input, void* output, size_t outputMaxLen, size_t* outputLen) {
+        auto result = decrypt(input);
+        if (!result) return false;
+        *outputLen = result->size;
+        if (*outputLen > outputMaxLen) {
+            // should never happen
+            CBL_Log(kCBLLogDomainListener, kCBLLogError, "outputLen is too small in callback decrypt");
+            return false;
+        }
+        memcpy(output, result->buf, *outputLen);
+        return true;
+    }
+
+    bool sign(int/*mbedtls_md_type_t*/ mbedDigestAlgorithm, fleece::slice inputData, void* outSignature) {
+        auto result = sign(CBLSignatureDigestAlgorithm(mbedDigestAlgorithm), inputData);
+        if (!result) return false;
+        memcpy(outSignature, result->buf, result->size);
+        return true;
+    }
+
+    // C++ API:
+
+    std::optional<fleece::alloc_slice> publicKeyData() {
         CFErrorRef error;
         CFDataRef data = SecKeyCopyExternalRepresentation(_publicKeyRef, &error);
         if (!data) {
             warnCFError(error, "SecKeyCopyExternalRepresentation");
-            return false;
+            return std::nullopt;
         }
         fleece::slice dataSlice{CFDataGetBytePtr(data), (size_t)CFDataGetLength(data)};
         // Converting it into the DER format LiteCore expects.
@@ -60,25 +99,18 @@ struct TLSIdentityTest::ExternalKey::Impl {
         if (!publicKey) {
             CBL_Log(kCBLLogDomainListener, kCBLLogError, "Error from PublickKeyFromData");
             CFRelease(data);
-            return false;
+            return std::nullopt;
         }
 
         fleece::alloc_slice result = CBLKeyPair_PublicKeyData(publicKey);
-        *outputLen = result.size;
-
-        if (*outputLen <= outputMaxLen) {
-            result.copyTo(output);
-        } else {
-            CBL_Log(kCBLLogDomainListener, kCBLLogError, "Key size is too big to put in the output");
-        }
 
         CFRelease(data);
         CBLKeyPair_Release(publicKey);
 
-        return *outputLen <= outputMaxLen;
+        return result;
     }
 
-    bool decrypt(fleece::slice input, void* output, size_t outputMaxLen, size_t* outputLen) {
+    std::optional<fleece::alloc_slice> decrypt(fleece::slice input) {
         // No exceptions may be thrown from this function!
         @autoreleasepool {
             CBL_Log(kCBLLogDomainListener, kCBLLogInfo, "Decrypting using Keychain private key");
@@ -89,20 +121,13 @@ struct TLSIdentityTest::ExternalKey::Impl {
                                                          (CFDataRef)data, &error) );
             if (!cleartext) {
                 warnCFError(error, "SecKeyCreateDecryptedData");
-                return false;
+                return std::nullopt;
             }
-            *outputLen = cleartext.length;
-            if (*outputLen > outputMaxLen) {
-                // should never happen
-                CBL_Log(kCBLLogDomainListener, kCBLLogError, "outputLen is too small in callback decrypt");
-                return false;
-            }
-            memcpy(output, cleartext.bytes, *outputLen);
-            return true;
+            return std::make_optional<fleece::alloc_slice>(cleartext.bytes, cleartext.length);
         }
     }
 
-    bool sign(int/*mbedtls_md_type_t*/ mbedDigestAlgorithm, fleece::slice inputData, void* outSignature) {
+    std::optional<fleece::alloc_slice> sign(CBLSignatureDigestAlgorithm mbedDigestAlgorithm, fleece::slice inputData) {
         // No exceptions may be thrown from this function!
         CBL_Log(kCBLLogDomainListener, kCBLLogInfo, "Signing using Keychain private key");
         @autoreleasepool {
@@ -115,7 +140,7 @@ struct TLSIdentityTest::ExternalKey::Impl {
                 {10 /*MBEDTLS_MD_SHA384*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384},
                 {11 /*MBEDTLS_MD_SHA512*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512}
             };
-            
+
             SecKeyAlgorithm digestAlgorithm = nullptr;
             if (kDigestAlgorithmMap.contains(mbedDigestAlgorithm)) {
                 digestAlgorithm = kDigestAlgorithmMap.at(mbedDigestAlgorithm);
@@ -123,7 +148,7 @@ struct TLSIdentityTest::ExternalKey::Impl {
 
             if (!digestAlgorithm) {
                 CBL_Log(kCBLLogDomainListener, kCBLLogWarning, "Keychain private key: unsupported mbedTLS digest algorithm %d", mbedDigestAlgorithm);
-                return false;
+                return std::nullopt;
             }
 
             // Create the signature:
@@ -134,11 +159,19 @@ struct TLSIdentityTest::ExternalKey::Impl {
                                                                       (CFDataRef)data, &error));
             if (!sigData) {
                 warnCFError(error, "SecKeyCreateSignature");
-                return false;
+                return std::nullopt;
             }
             assert(sigData.length == _keyLength);
-            memcpy(outSignature, sigData.bytes, _keyLength);
-            return true;
+            if (sigData.length != _keyLength) {
+                // Should be unreachable (see the assert above); this is the release-build
+                // (NDEBUG) safety net, since reading _keyLength bytes from a shorter sigData
+                // would otherwise over-read.
+                CBL_Log(kCBLLogDomainListener, kCBLLogError,
+                        "SecKeyCreateSignature returned %lu bytes, expected %u",
+                        (unsigned long)sigData.length, _keyLength);
+                return std::nullopt;
+            }
+            return std::make_optional<fleece::alloc_slice>(sigData.bytes, _keyLength);
         }
     }
 
@@ -188,6 +221,19 @@ bool TLSIdentityTest::ExternalKey::decrypt(fleece::slice input, void *output, si
 
 bool TLSIdentityTest::ExternalKey::sign(CBLSignatureDigestAlgorithm mbedDigestAlgorithm, fleece::slice inputData, void *outSignature) {
     return _impl->sign(mbedDigestAlgorithm, inputData, outSignature);
+}
+
+// For C++ API
+std::optional<fleece::alloc_slice> TLSIdentityTest::ExternalKey::publicKeyData() {
+    return _impl->publicKeyData();
+}
+
+std::optional<fleece::alloc_slice> TLSIdentityTest::ExternalKey::decrypt(fleece::slice input) {
+    return _impl->decrypt(input);
+}
+
+std::optional<fleece::alloc_slice> TLSIdentityTest::ExternalKey::sign(CBLSignatureDigestAlgorithm mbedDigestAlgorithm, fleece::slice inputData) {
+    return _impl->sign(mbedDigestAlgorithm, inputData);
 }
 
 #endif // #ifdef COUCHBASE_ENTERPRISE

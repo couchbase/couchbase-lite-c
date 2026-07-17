@@ -72,7 +72,7 @@ namespace {
 
 }; // anonymous namespace for external key
 
-TEST_CASE_METHOD(TLSIdentityTest, "Self-Signed Cert Identity", "[TSLIdentity]") {
+TEST_CASE_METHOD(TLSIdentityTest, "Self-Signed Cert Identity", "[TLSIdentity]") {
     CBLError outError{};
 
     CBLKeyPair* keypair = CBLKeyPair_GenerateRSAKeyPair(fleece::nullslice, &outError);
@@ -119,7 +119,7 @@ TEST_CASE_METHOD(TLSIdentityTest, "Self-Signed Cert Identity", "[TSLIdentity]") 
     CBLKeyPair_Release(pkOfCert);
 }
 
-TEST_CASE_METHOD(TLSIdentityTest, "External Keys", "[TSLIdentity]") {
+TEST_CASE_METHOD(TLSIdentityTest, "External Keys", "[TLSIdentity]") {
     CBLError outError{};
 
     TLSIdentityTest::ExternalKey* externalKey = TLSIdentityTest::ExternalKey::generateRSA(2048);
@@ -164,7 +164,7 @@ TEST_CASE_METHOD(TLSIdentityTest, "External Keys", "[TSLIdentity]") {
 #if !defined(__linux__) && !defined(__ANDROID__)
 
 // T0011-1 TestCreateGetDeleteIdentityWithLabel
-TEST_CASE_METHOD(TLSIdentityTest, "Identity With Label", "[TSLIdentity]") {
+TEST_CASE_METHOD(TLSIdentityTest, "Identity With Label", "[TLSIdentity]") {
     CBLError outError{};
 
     // Clean the identity from the system.
@@ -227,7 +227,7 @@ TEST_CASE_METHOD(TLSIdentityTest, "Identity With Label", "[TSLIdentity]") {
 }
 
 // T0011-2 TestUseIdentityCreatedWithLabel
-TEST_CASE_METHOD(URLEndpointListenerTest, "Use Identity Created with Label", "[TSLIdentity]") {
+TEST_CASE_METHOD(URLEndpointListenerTest, "Use Identity Created with Label", "[TLSIdentity]") {
     CBLError outError{};
 
     CBLTLSIdentity* identity = nullptr;
@@ -318,7 +318,7 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "Use Identity Created with Label", "[T
 }
 
 // T0011-3 TestCreateAndUseSelfSignedIdentityWithPrivateKeyData
-TEST_CASE_METHOD(URLEndpointListenerTest, "Self-Signed Identity with Private KeyData", "[TSLIdentity]") {
+TEST_CASE_METHOD(URLEndpointListenerTest, "Self-Signed Identity with Private KeyData", "[TLSIdentity]") {
     CBLError outError{};
 
     // Gets a pre-created RSA private key data in PEM format with a password from file.
@@ -401,7 +401,7 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "Self-Signed Identity with Private Key
 #endif // #if !defined(__linux__) && !defined(__ANDROID__)
 
 // T0011-4 TestCreateAndUseSelfSignedIdentityWithPrivateKeyCallback
-TEST_CASE_METHOD(URLEndpointListenerTest, "Self-Signed Identity with PrivateKey Callback", "[TSLIdentity]") {
+TEST_CASE_METHOD(URLEndpointListenerTest, "Self-Signed Identity with PrivateKey Callback", "[TLSIdentity]") {
     CBLError outError{};
 
     // Creates a KeyPair callback using keychain implementation
@@ -492,7 +492,7 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "Self-Signed Identity with PrivateKey 
 #endif //#ifdef  __APPLE__
 
 // T0011-5 TestCreateAndUseIdentityFromKeyPairAndCerts
-TEST_CASE_METHOD(URLEndpointListenerTest, "Identity from KeyPair and Certs", "[TSLIdentity]") {
+TEST_CASE_METHOD(URLEndpointListenerTest, "Identity from KeyPair and Certs", "[TLSIdentity]") {
     CBLError outError{};
 
     // Create a KeyPair object from a private key loaded from a PEM file.
@@ -586,7 +586,7 @@ namespace {
 } // anonymous namespace
 
 // T0011-6 TestGetCertChain
-TEST_CASE_METHOD(TLSIdentityTest, "Get CertChain", "[TSLIdentity]") {
+TEST_CASE_METHOD(TLSIdentityTest, "Get CertChain", "[TLSIdentity]") {
     CBLError outError{};
 
     // Create a Cert object with the PEM file containing a cert chain.

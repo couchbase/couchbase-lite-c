@@ -16,6 +16,12 @@
 		1B7694AD2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1B7694AB2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm */; };
 		1B7694AE2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1B7694AB2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm */; };
 		1B7694B12DA49EB9006EEEAB /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 277CC9B122BC4E2E00B245CB /* Security.framework */; };
+		1B8BE8C4300570A500162AC5 /* TLSIdentity.hh in Headers */ = {isa = PBXBuildFile; fileRef = 1B8BE8C3300570A500162AC5 /* TLSIdentity.hh */; };
+		1B8BE8C5300570A500162AC5 /* TLSIdentity.hh in Headers */ = {isa = PBXBuildFile; fileRef = 1B8BE8C3300570A500162AC5 /* TLSIdentity.hh */; };
+		1B8BE8D930057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8BE8D830057FB600162AC5 /* TLSIdentityTest_Cpp.cc */; };
+		1B8BE8DA30057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8BE8D830057FB600162AC5 /* TLSIdentityTest_Cpp.cc */; };
+		1B8BE8DB30057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8BE8D830057FB600162AC5 /* TLSIdentityTest_Cpp.cc */; };
+		1B8BE8DC30057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8BE8D830057FB600162AC5 /* TLSIdentityTest_Cpp.cc */; };
 		1BC5D9602D6E3BD10080153E /* CBLURLEndpointListener.h in Headers */ = {isa = PBXBuildFile; fileRef = 1BC5D95F2D6E3BD10080153E /* CBLURLEndpointListener.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1BC5D9612D6E3BD10080153E /* CBLURLEndpointListener.h in Headers */ = {isa = PBXBuildFile; fileRef = 1BC5D95F2D6E3BD10080153E /* CBLURLEndpointListener.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1BC5D9662D6E4DA60080153E /* CBLURLEndpointListener_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1BC5D9652D6E4DA60080153E /* CBLURLEndpointListener_CAPI.cc */; };
@@ -568,6 +574,8 @@
 		1B4D22B42FAE496B005E24FA /* Encryptable.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Encryptable.hh; sourceTree = "<group>"; };
 		1B7694AA2DA07261006EEEAB /* TLSIdentityTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSIdentityTest.hh; sourceTree = "<group>"; };
 		1B7694AB2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "TLSIdentityTest+Apple.mm"; sourceTree = "<group>"; };
+		1B8BE8C3300570A500162AC5 /* TLSIdentity.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSIdentity.hh; sourceTree = "<group>"; };
+		1B8BE8D830057FB600162AC5 /* TLSIdentityTest_Cpp.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TLSIdentityTest_Cpp.cc; sourceTree = "<group>"; };
 		1BC5D95F2D6E3BD10080153E /* CBLURLEndpointListener.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CBLURLEndpointListener.h; sourceTree = "<group>"; };
 		1BC5D9652D6E4DA60080153E /* CBLURLEndpointListener_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CBLURLEndpointListener_CAPI.cc; sourceTree = "<group>"; };
 		1BDEBBF12FBB98A10063786B /* EncryptableTest_Cpp.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = EncryptableTest_Cpp.cc; sourceTree = "<group>"; };
@@ -1066,6 +1074,7 @@
 				277FEE4F21E6AB1100B60E3C /* Query.hh */,
 				400AB0522C2E66B500DB6223 /* QueryIndex.hh */,
 				27C9B5F121F7D74A0040BC45 /* Replicator.hh */,
+				1B8BE8C3300570A500162AC5 /* TLSIdentity.hh */,
 				400AB0542C2E7AC300DB6223 /* VectorIndex.hh */,
 			);
 			path = "cbl++";
@@ -1105,6 +1114,7 @@
 				1BDEBC592FEB5E690063786B /* ReplicatorPropEncTest_Cpp.cc */,
 				1B7694AB2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm */,
 				1BF21A3C2D84E419009534EC /* TLSIdentityTest.cc */,
+				1B8BE8D830057FB600162AC5 /* TLSIdentityTest_Cpp.cc */,
 				1B7694AA2DA07261006EEEAB /* TLSIdentityTest.hh */,
 				1B21A7D82D711B29000CA0D5 /* URLEndpointListenerTest.cc */,
 				1B49DBCF2DAF106F000F382E /* URLEndpointListenerTest.hh */,
@@ -1315,6 +1325,7 @@
 				1B4D22B62FAE496B005E24FA /* Encryptable.hh in Headers */,
 				27DBD0A9246CA667002FD7A7 /* CBLLog.h in Headers */,
 				405D4F8E2C34714F00221516 /* CBLQueryTypes.h in Headers */,
+				1B8BE8C4300570A500162AC5 /* TLSIdentity.hh in Headers */,
 				27984E362249A247000FE777 /* Query.hh in Headers */,
 				27984E372249A247000FE777 /* Replicator.hh in Headers */,
 			);
@@ -1371,6 +1382,7 @@
 				1B4D22B52FAE496B005E24FA /* Encryptable.hh in Headers */,
 				40B32FA12E54034500D48F37 /* CBLLog.h in Headers */,
 				40B32FA22E54034500D48F37 /* CBLQueryTypes.h in Headers */,
+				1B8BE8C5300570A500162AC5 /* TLSIdentity.hh in Headers */,
 				40B32FA32E54034500D48F37 /* Query.hh in Headers */,
 				40B32FA42E54034500D48F37 /* Replicator.hh in Headers */,
 			);
@@ -2191,6 +2203,7 @@
 				93C70D3526D01B5A0093E927 /* BlobTest.cc in Sources */,
 				FC0907E828AD763600201B07 /* DocumentTest_Cpp.cc in Sources */,
 				FC09077C28A5F3EF00201B07 /* CollectionTest_Cpp.cc in Sources */,
+				1B8BE8DA30057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */,
 				FCC063F3285BA641000C5BD7 /* DocumentTest.cc in Sources */,
 				275B358923481D0C00FE9CF0 /* CBLTest.cc in Sources */,
 				1BDEBC5A2FEB5E690063786B /* ReplicatorPropEncTest_Cpp.cc in Sources */,
@@ -2237,6 +2250,7 @@
 				FCD8298C283591D4004AA814 /* CollectionTest.cc in Sources */,
 				FC645E2D29088211007D5536 /* Platform_Apple.mm in Sources */,
 				1B21A7DA2D711B29000CA0D5 /* URLEndpointListenerTest.cc in Sources */,
+				1B8BE8D930057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */,
 				93C70D3426D01B5A0093E927 /* BlobTest.cc in Sources */,
 				1B7694AD2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm in Sources */,
 				1BDEBC5C2FEB5E690063786B /* ReplicatorPropEncTest_Cpp.cc in Sources */,
@@ -2283,6 +2297,7 @@
 				40B32EEB2E53EAF600D48F37 /* CollectionTest.cc in Sources */,
 				40B32EEC2E53EAF600D48F37 /* Platform_Apple.mm in Sources */,
 				40B32EED2E53EAF600D48F37 /* URLEndpointListenerTest.cc in Sources */,
+				1B8BE8DB30057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */,
 				40B32EEE2E53EAF600D48F37 /* BlobTest.cc in Sources */,
 				40B32EEF2E53EAF600D48F37 /* TLSIdentityTest+Apple.mm in Sources */,
 				1BDEBC5B2FEB5E690063786B /* ReplicatorPropEncTest_Cpp.cc in Sources */,
@@ -2357,6 +2372,7 @@
 				FC645E1829085C71007D5536 /* QueryTest.cc in Sources */,
 				1BDEBC5D2FEB5E690063786B /* ReplicatorPropEncTest_Cpp.cc in Sources */,
 				FC645E0F29085C0A007D5536 /* CBLTest.cc in Sources */,
+				1B8BE8DC30057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
