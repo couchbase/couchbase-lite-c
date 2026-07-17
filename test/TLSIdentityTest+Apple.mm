@@ -21,7 +21,6 @@
 #include "TLSIdentityTest.hh"
 #include <optional>
 #include <unordered_map>
-#include <sstream
 
 #ifdef COUCHBASE_ENTERPRISE
 
