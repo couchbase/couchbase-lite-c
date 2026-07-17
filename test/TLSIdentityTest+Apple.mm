@@ -153,7 +153,7 @@ struct TLSIdentityTest::ExternalKey::Impl {
 
             // Create the signature:
             NSData* data = uncopiedNSData(inputData);
-            CFErrorRef error;
+            CFErrorRef error{nullptr};
             NSData* sigData = CFBridgingRelease(SecKeyCreateSignature(_privateKeyRef,
                                                                       digestAlgorithm,
                                                                       (CFDataRef)data, &error));
