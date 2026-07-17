@@ -16,8 +16,8 @@
 		1B7694AD2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1B7694AB2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm */; };
 		1B7694AE2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1B7694AB2DA085F4006EEEAB /* TLSIdentityTest+Apple.mm */; };
 		1B7694B12DA49EB9006EEEAB /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 277CC9B122BC4E2E00B245CB /* Security.framework */; };
-		1B8BE8C4300570A500162AC5 /* TLSIdentity.hh in Headers */ = {isa = PBXBuildFile; fileRef = 1B8BE8C3300570A500162AC5 /* TLSIdentity.hh */; };
-		1B8BE8C5300570A500162AC5 /* TLSIdentity.hh in Headers */ = {isa = PBXBuildFile; fileRef = 1B8BE8C3300570A500162AC5 /* TLSIdentity.hh */; };
+		1B8BE8C4300570A500162AC5 /* TLSIdentity.hh in Headers */ = {isa = PBXBuildFile; fileRef = 1B8BE8C3300570A500162AC5 /* TLSIdentity.hh */; settings = {ATTRIBUTES = (Public, ); }; };
+		1B8BE8C5300570A500162AC5 /* TLSIdentity.hh in Headers */ = {isa = PBXBuildFile; fileRef = 1B8BE8C3300570A500162AC5 /* TLSIdentity.hh */; settings = {ATTRIBUTES = (Public, ); }; };
 		1B8BE8D930057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8BE8D830057FB600162AC5 /* TLSIdentityTest_Cpp.cc */; };
 		1B8BE8DA30057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8BE8D830057FB600162AC5 /* TLSIdentityTest_Cpp.cc */; };
 		1B8BE8DB30057FB600162AC5 /* TLSIdentityTest_Cpp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8BE8D830057FB600162AC5 /* TLSIdentityTest_Cpp.cc */; };
