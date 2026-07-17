@@ -20,7 +20,8 @@
 #import <Security/Security.h>
 #include "TLSIdentityTest.hh"
 #include <optional>
-#include <sstream>
+#include <unordered_map>
+#include <sstream
 
 #ifdef COUCHBASE_ENTERPRISE
 
