@@ -87,7 +87,7 @@ struct TLSIdentityTest::ExternalKey::Impl {
     // C++ API:
 
     std::optional<fleece::alloc_slice> publicKeyData() {
-        CFErrorRef error;
+        CFErrorRef error{nullptr};
         CFDataRef data = SecKeyCopyExternalRepresentation(_publicKeyRef, &error);
         if (!data) {
             warnCFError(error, "SecKeyCopyExternalRepresentation");
@@ -192,7 +192,7 @@ TLSIdentityTest::ExternalKey* TLSIdentityTest::ExternalKey::generateRSA(unsigned
         };
 
         SecKeyRef publicKey = NULL, privateKey = NULL;
-        CFErrorRef error;
+        CFErrorRef error{nullptr};
         privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
         if (!privateKey) {
             CBL_Log(kCBLLogDomainListener, kCBLLogWarning, "SecKeyCreateRandomKey");

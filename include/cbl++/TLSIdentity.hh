@@ -24,6 +24,7 @@
 #include "cbl/CBLLog.h"
 #include "cbl/CBLTLSIdentity.h"
 #include "fleece/Fleece.hh"
+#include <cstring>
 #include <exception>
 #include <functional>
 #include <memory>
