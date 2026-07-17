@@ -24,9 +24,12 @@
 #include "cbl/CBLTLSIdentity.h"
 #include "fleece/Fleece.hh"
 #include <cstring>
+#include <exception>
+#include <functional>
+#include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
-
 CBL_ASSUME_NONNULL_BEGIN
 
 namespace cbl {
