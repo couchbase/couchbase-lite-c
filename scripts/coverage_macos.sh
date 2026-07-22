@@ -84,7 +84,7 @@ core_count=`getconf _NPROCESSORS_ONLN`
 make -j `expr $core_count + 1`
 
 pushd test > /dev/null
-./CBL_C_Tests -r list
+./CBL_C_Tests -r quiet
 popd > /dev/null
 
 mkdir -p report

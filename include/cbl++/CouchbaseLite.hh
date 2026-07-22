@@ -100,4 +100,5 @@
 #include "Query.hh"
 #include "QueryIndex.hh"
 #include "Replicator.hh"
+#include "TLSIdentity.hh"
 #include "VectorIndex.hh"
