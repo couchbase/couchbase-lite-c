@@ -321,6 +321,7 @@ namespace cbl {
 
     private:
         friend class TLSIdentity;
+        friend class ListenerAuthenticator;
 
         struct adopt_t {};
         inline static constexpr adopt_t adopt{};
@@ -476,6 +477,8 @@ namespace cbl {
         CBL_REFCOUNTED_BOILERPLATE(TLSIdentity, RefCounted, CBLTLSIdentity)
 
     private:
+        friend class URLEndpointListener;
+
         struct adopt_t {};
         inline static constexpr adopt_t adopt{};
 
