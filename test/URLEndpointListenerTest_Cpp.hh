@@ -92,30 +92,33 @@ public:
         return cbl::Endpoint::urlEndpoint(ss.str());
     }
 
-    // Verifies that `listener`'s internally-stored config matches `listenerConfig`, by comparing
-    // against the same conversion the production constructor itself uses
-    // (toCConfigWithoutCollections(), friended to this fixture -- not to the TEST_CASE_METHOD
-    // subclass Catch2 generates, since friendship isn't inherited, which is why this lives here
-    // as an actual member of the friended class rather than inline in a test body). Collections
-    // aren't covered, since that method deliberately leaves them unset (see its own comment).
-    void checkStoredConfigMatches(const cbl::URLEndpointListenerConfiguration& listenerConfig,
-                                  const cbl::URLEndpointListener& listener) {
-        auto configFromListener = CBLURLEndpointListener_Config(listener.ref());
-        REQUIRE(configFromListener);
-        CBLURLEndpointListenerConfiguration expected = listenerConfig.toCConfigWithoutCollections();
-        CHECK(configFromListener->port == expected.port);
-        CHECK(configFromListener->disableTLS == expected.disableTLS);
-        CHECK(configFromListener->enableDeltaSync == expected.enableDeltaSync);
-        CHECK(configFromListener->readOnly == expected.readOnly);
-        CHECK(fleece::slice(configFromListener->networkInterface) == fleece::slice(expected.networkInterface));
-        CHECK(configFromListener->tlsIdentity == expected.tlsIdentity);
+    // Verifies fromListener (from CBLURLEndpointListener_Config) matches source.
+    // c.f. URLEndpointListener::URLEndpointListener(),
+    //      URLEndpointListenerConfiguration::toCConfigWithoutCollections() (private -- fields
+    //      compared here directly instead)
+    static void checkConfiguration(const cbl::URLEndpointListenerConfiguration& source,
+                                   const CBLURLEndpointListenerConfiguration* fromListener)
+    {
+        REQUIRE(fromListener);
+        CHECK(fromListener->port == source.port);
+        CHECK(fromListener->disableTLS == source.disableTLS);
+        CHECK(fromListener->enableDeltaSync == source.enableDeltaSync);
+        CHECK(fromListener->readOnly == source.readOnly);
+        CHECK(fleece::slice(fromListener->networkInterface) == fleece::slice(source.networkInterface));
+        CHECK(fromListener->tlsIdentity == source.tlsIdentity.ref());
         // Unlike tlsIdentity/collections (which the listener retains via CBL_Retain, so the same
         // pointer identity holds), the listener's constructor heap-allocates its own copy of the
         // CBLListenerAuthenticator struct itself (CBLURLEndpointListener_Internal.hh, in the EE
         // sibling repo: `_conf.authenticator = new CBLListenerAuthenticator(*_conf.authenticator)`).
-        // So configFromListener->authenticator is never pointer-equal to what was configured --
-        // only presence/absence is checkable here, not identity.
-        CHECK((configFromListener->authenticator != nullptr) == (expected.authenticator != nullptr));
+        // So fromListener->authenticator is never pointer-equal to what was configured -- only
+        // presence/absence is checkable here, not identity.
+        CHECK((fromListener->authenticator != nullptr) == (source.authenticator.ref() != nullptr));
+
+        auto collections = source.collections();
+        REQUIRE(fromListener->collectionCount == collections.size());
+        for ( size_t i = 0; i < collections.size(); i++ ) {
+            CHECK(fromListener->collections[i] == collections[i].ref());
+        }
     }
 
     // Creates a self-signed TLS identity for the given role. The C fixture mints a fresh RSA

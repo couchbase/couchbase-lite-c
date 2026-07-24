@@ -32,11 +32,6 @@
 #include <variant>
 #include <vector>
 
-// Test peer: declared so URLEndpointListenerConfiguration can friend it (see
-// test/URLEndpointListenerTest_Cpp.cc), letting that test verify toCConfigWithoutCollections()'s
-// output directly rather than re-deriving the expected fields by hand.
-class URLEndpointListenerTest_Cpp;
-
 CBL_ASSUME_NONNULL_BEGIN
 
 namespace cbl {
@@ -55,37 +50,42 @@ namespace cbl {
         ListenerAuthenticator() = default;
 
         /** Creates a password authenticator that verifies client credentials via HTTP Basic Authentication.
-            @param callback  The callback used to verify a client's username/password. */
+            @param callback  The callback used to verify a client's username/password.
+            @throws cbl::Error  If callback is falsy (empty). */
         static ListenerAuthenticator passwordAuthenticator(PasswordAuthCallback callback) {
             if ( !callback ) {
-                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy callback"};
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "callback must not be empty"};
             }
             return ListenerAuthenticator(std::move(callback));
         }
 
         /** Creates a certificate authenticator that verifies a client's certificate using the given callback.
-            @param callback  The callback used to verify a client's certificate. */
+            @param callback  The callback used to verify a client's certificate.
+            @throws cbl::Error  If callback is falsy (empty). */
         static ListenerAuthenticator certAuthenticator(CertAuthCallback callback) {
             if ( !callback ) {
-                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy callbck"};
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "callback must not be empty"};
             }
             return ListenerAuthenticator(std::move(callback));
         }
 
         /** Creates a certificate authenticator that trusts any client certificate signed by the given
             root certificate chain.
-            @param rootCerts  The root certificate chain to trust. */
+            @param rootCerts  The root certificate chain to trust.
+            @throws cbl::Error  If rootCerts is falsy (empty). */
         static ListenerAuthenticator certAuthenticator(const Cert& rootCerts) {
             if ( !rootCerts ) {
-                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy certs"};
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "rootCerts must not be empty"};
             }
             return ListenerAuthenticator(CBLListenerAuth_CreateCertificateWithRootCerts(rootCerts.ref()));
         }
 
+        /** Returns a pointer to the underlying C CBLListenerAuthenticator object, or NULL if this
+            is an empty (null) authenticator. */
+        CBLListenerAuthenticator* _cbl_nullable ref() const {return _ref.get();}
+
     protected:
         friend class URLEndpointListenerConfiguration;
-
-        CBLListenerAuthenticator* _cbl_nullable ref() const {return _ref.get();}
 
     private:
         // The C API only accepts a plain function pointer, so PasswordAuthCallback/CertAuthCallback
@@ -177,7 +177,6 @@ namespace cbl {
 
     private:
         friend class URLEndpointListener;
-        friend class ::URLEndpointListenerTest_Cpp; // test peer, for verifying toCConfigWithoutCollections()
 
         // Builds the C config with everything except .collections/.collectionCount, which the
         // caller (URLEndpointListener's constructor) must fill in itself: those point at a

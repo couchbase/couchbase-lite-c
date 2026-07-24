@@ -50,14 +50,11 @@ TEST_CASE_METHOD(URLEndpointListenerTest_Cpp, "C++ Listener Basics", "[URLListen
 
     SECTION("Comparing the Configuration from the Listener") {
         URLEndpointListener listener(listenerConfig);
-        checkStoredConfigMatches(listenerConfig, listener);
 
-        auto configFromListener = CBLURLEndpointListener_Config(listener.ref());
-        auto collections = listenerConfig.collections();
-        REQUIRE(configFromListener->collectionCount == collections.size());
-        for ( size_t i = 0; i < collections.size(); i++ ) {
-            CHECK(configFromListener->collections[i] == collections[i].ref());
-        }
+        // Compares listenerConfig (what we configured) against the listener's own
+        // internally-stored copy of it, fetched via the raw C accessor (see
+        // checkConfiguration()'s comment for why there's no C++ wrapper for that).
+        checkConfiguration(listenerConfig, CBLURLEndpointListener_Config(listener.ref()));
 
         listener.stop();
     }
