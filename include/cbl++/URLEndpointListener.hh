@@ -58,7 +58,7 @@ namespace cbl {
             @param callback  The callback used to verify a client's username/password. */
         static ListenerAuthenticator passwordAuthenticator(PasswordAuthCallback callback) {
             if ( !callback ) {
-                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy callbck"};
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy callback"};
             }
             return ListenerAuthenticator(std::move(callback));
         }
