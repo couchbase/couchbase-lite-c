@@ -93,6 +93,9 @@ namespace cbl {
 #ifdef COUCHBASE_ENTERPRISE
         /** Creates a certificate authenticator using a TLS client identity. (Enterprise Edition only.) */
         static Authenticator certificateAuthenticator(const TLSIdentity& identity) {
+            if ( !identity ) {
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy identity"};
+            }
             return Authenticator(CBLAuth_CreateCertificate(identity.ref()));
         }
 #endif

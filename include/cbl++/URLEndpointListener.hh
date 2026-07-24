@@ -57,12 +57,18 @@ namespace cbl {
         /** Creates a password authenticator that verifies client credentials via HTTP Basic Authentication.
             @param callback  The callback used to verify a client's username/password. */
         static ListenerAuthenticator passwordAuthenticator(PasswordAuthCallback callback) {
+            if ( !callback ) {
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy callbck"};
+            }
             return ListenerAuthenticator(std::move(callback));
         }
 
         /** Creates a certificate authenticator that verifies a client's certificate using the given callback.
             @param callback  The callback used to verify a client's certificate. */
         static ListenerAuthenticator certAuthenticator(CertAuthCallback callback) {
+            if ( !callback ) {
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy callbck"};
+            }
             return ListenerAuthenticator(std::move(callback));
         }
 
@@ -70,6 +76,9 @@ namespace cbl {
             root certificate chain.
             @param rootCerts  The root certificate chain to trust. */
         static ListenerAuthenticator certAuthenticator(const Cert& rootCerts) {
+            if ( !rootCerts ) {
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy certs"};
+            }
             return ListenerAuthenticator(CBLListenerAuth_CreateCertificateWithRootCerts(rootCerts.ref()));
         }
 
