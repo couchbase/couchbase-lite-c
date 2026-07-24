@@ -145,21 +145,21 @@ namespace cbl {
             CBLExternalKeyCallbacks cCallbacks = {};
             cCallbacks.publicKeyData = [](void* rawContext, void* output, size_t outputMaxLen,
                                           size_t* outputLen) -> bool {
-                return invokeSafely("publicKeyData", [&] {
+                return internal::invokeSafely("ExternalKeyHolder", "publicKeyData", [&] {
                     auto& holder = ((ExternalKeyContext*)rawContext)->holder;
                     return copyResult(holder.publicKeyData(holder.externalKey), output, outputMaxLen, outputLen);
                 });
             };
             cCallbacks.decrypt = [](void* rawContext, FLSlice input, void* output, size_t outputMaxLen,
                                     size_t* outputLen) -> bool {
-                return invokeSafely("decrypt", [&] {
+                return internal::invokeSafely("ExternalKeyHolder", "decrypt", [&] {
                     auto& holder = ((ExternalKeyContext*)rawContext)->holder;
                     return copyResult(holder.decrypt(holder.externalKey, input), output, outputMaxLen, outputLen);
                 });
             };
             cCallbacks.sign = [](void* rawContext, CBLSignatureDigestAlgorithm digestAlgorithm,
                                  FLSlice inputData, void* outSignature) -> bool {
-                return invokeSafely("sign", [&] {
+                return internal::invokeSafely("ExternalKeyHolder", "sign", [&] {
                     auto* context = (ExternalKeyContext*)rawContext;
                     auto& holder  = context->holder;
                     auto  result  = holder.sign(holder.externalKey, digestAlgorithm, inputData);
@@ -238,25 +238,6 @@ namespace cbl {
 
             if ( result->size > 0 ) memcpy(output, result->buf, result->size);
             return true;
-        }
-
-        // Invokes fn, catching and logging any exception it throws. Required because the C API
-        // invokes these trampolines from a noexcept path (litecore's
-        // ExternalKeyPair::_decrypt/_sign), where an escaping exception would call
-        // std::terminate() instead of just failing the TLS operation.
-        template <class Fn>
-        static bool invokeSafely(const char* what, Fn&& fn) noexcept {
-            try {
-                return fn();
-            } catch (const cbl::Error& error) {
-                CBL_Log(kCBLLogDomainNetwork, kCBLLogError, "ExternalKeyHolder::%s threw error %d/%d: %s",
-                        what, error.domain, error.code, error.what());
-            } catch (const std::exception& error) {
-                CBL_Log(kCBLLogDomainNetwork, kCBLLogError, "ExternalKeyHolder::%s threw %s", what, error.what());
-            } catch (...) {
-                CBL_Log(kCBLLogDomainNetwork, kCBLLogError, "ExternalKeyHolder::%s threw an unknown exception", what);
-            }
-            return false;
         }
     };
 

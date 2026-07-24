@@ -70,7 +70,7 @@ public:
         for (const auto& label : identityLabelsToDelete) {
             auto res = labelSet.insert(label);
             // Make sure that a test does not generate identical labels.
-            REQUIRE(res.second);
+            CHECK(res.second);
 #if !defined(__linux__) && !defined(__ANDROID__)
             CHECK(cbl::TLSIdentity::deleteIdentityWithLabel((std::string_view)fleece::slice(label)));
 #else
