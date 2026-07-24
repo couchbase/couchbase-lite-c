@@ -94,7 +94,7 @@ namespace cbl {
         /** Creates a certificate authenticator using a TLS client identity. (Enterprise Edition only.) */
         static Authenticator certificateAuthenticator(const TLSIdentity& identity) {
             if ( !identity ) {
-                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "Falsy identity"};
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "identity must not be empty"};
             }
             return Authenticator(CBLAuth_CreateCertificate(identity.ref()));
         }
