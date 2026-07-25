@@ -59,13 +59,13 @@ TEST_CASE_METHOD(URLEndpointListenerTest_Cpp, "C++ Listener Basics", "[URLListen
         listener.stop();
     }
 
-    URLEndpointListener listener(listenerConfig);
-    // Before start, the listener's port is 0.
-    CHECK(0 == listener.port());
+    SECTION("Port from the Listener") {
+        URLEndpointListener listener(listenerConfig);
+        // Before start, the listener's port is 0.
+        CHECK(0 == listener.port());
         listener.start();
         // Having started, it returns the port selected by the server.
         CHECK(listener.port() > 0);
-
         listener.stop();
     }
 
