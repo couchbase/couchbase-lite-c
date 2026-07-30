@@ -18,8 +18,8 @@
 
 #include "CBLTest_Cpp.hh"
 #include "TLSIdentityTest.hh"
-#include "URLEndpointListenerTest.hh"     // for the shared readFile() asset helper, and the
-                                          // listener/replicator fixture used below
+#include "URLEndpointListenerTest_Cpp.hh" // for the shared readFile() asset helper, and the
+                                          // C++ listener/replicator fixture used below
 #include "fleece/Mutable.hh"
 #include <chrono>
 #include <cmath>
@@ -33,6 +33,7 @@
 
 #ifdef COUCHBASE_ENTERPRISE
 
+using namespace std;
 using namespace std::chrono;
 using namespace fleece;
 using namespace cbl;
@@ -44,7 +45,7 @@ TEST_CASE_METHOD(TLSIdentityTest_Cpp, "C++ Self-Signed Cert Identity", "[TLSIden
     // Load a known RSA private key (instead of the private, test-only
     // CBLKeyPair_GenerateRSAKeyPair API, which has no C++ wrapper) via the public
     // KeyPair::createWithPrivateKeyData factory.
-    string pem = URLEndpointListenerTest::readFile("private_key_of_self_signed_cert.pem");
+    string pem = URLEndpointListenerTest_Cpp::readFile("private_key_of_self_signed_cert.pem");
     KeyPair keypair = KeyPair::createWithPrivateKeyData(slice{pem.c_str(), pem.size() + 1});
 
     MutableDict attributes = MutableDict::newDict();
@@ -134,13 +135,11 @@ TEST_CASE_METHOD(TLSIdentityTest_Cpp, "C++ External Keys", "[TLSIdentity]") {
 }
 
 // Ported from TLSIdentityTest.cc's "Self-Signed Identity with PrivateKey Callback": builds the
-// identity via the C++ API, then bridges into the still-C CBLURLEndpointListener/replicator via
-// KeyPair::ref()/TLSIdentity::ref() -- there's no C++ URLEndpointListener wrapper yet. This is
-// the one deferred test worth porting now (see the comment further down), since it's the only
-// one that actually drives ExternalKeyHolder's decrypt/sign callbacks through a real TLS
-// handshake; the others mostly re-exercise listener/replicator plumbing that's unrelated to
-// this header.
-TEST_CASE_METHOD(URLEndpointListenerTest, "C++ Self-Signed Identity with PrivateKey Callback", "[TLSIdentity]") {
+// identity via the C++ API and drives it through a real TLS handshake using the C++
+// URLEndpointListener wrapper -- this is the one test that actually exercises
+// ExternalKeyHolder's decrypt/sign callbacks through a live connection; the others mostly
+// re-exercise listener/replicator plumbing unrelated to this header (see further down).
+TEST_CASE_METHOD(URLEndpointListenerTest_Cpp, "C++ Self-Signed Identity with PrivateKey Callback", "[TLSIdentity]") {
     constexpr size_t keySizeInBits = 2048;
 
     // Creates a KeyPair wrapping an Apple Keychain-backed external key (callbacks defined in
@@ -179,47 +178,34 @@ TEST_CASE_METHOD(URLEndpointListenerTest, "C++ Self-Signed Identity with Private
         duration_cast<milliseconds>(TLSIdentityTest::OneYear).count());
     CHECK(identity);
 
-    // Initializes a listener with a config using the identity, bridged via TLSIdentity::ref()
-    // since CBLURLEndpointListenerConfiguration is still a plain C API.
-    createNumberedDocsWithPrefix(cy[0], 20, "doc2");
-    createNumberedDocsWithPrefix(cy[1], 20, "doc2");
-    CBLURLEndpointListenerConfiguration listenerConfig {
-        cy.data(),
-        2,
-        0,         // port
-        {},        // networkInterface
-        false      // disableTLS
-    };
-    listenerConfig.tlsIdentity = identity.ref();
-    listenerConfig.authenticator = CBLListenerAuth_CreatePassword([](void* ctx, FLString usr, FLString psw) {
-        return usr == TLSIdentityTest::kUser && psw == TLSIdentityTest::kPassword;
-    }, nullptr);
-    REQUIRE(listenerConfig.authenticator);
+    // Initializes a listener with a config using the identity. Scoped in a block so the
+    // listener and its config -- both of which retain their own copy of `identity` (the C++
+    // config struct stores a TLSIdentity by value, unlike the C API's borrowed raw pointer
+    // field, and the listener itself retains its own internal copy too) -- release those
+    // copies before the counterFree check below.
+    {
+        createNumberedDocsWithPrefix(cy[0], 20, "doc2");
+        createNumberedDocsWithPrefix(cy[1], 20, "doc2");
+        URLEndpointListenerConfiguration listenerConfig({cy[0], cy[1]});
+        listenerConfig.disableTLS = false;
+        listenerConfig.tlsIdentity = identity;
+        listenerConfig.authenticator = ListenerAuthenticator::passwordAuthenticator(
+            [](std::string_view usr, std::string_view psw) {
+                return slice(usr) == TLSIdentityTest::kUser && slice(psw) == TLSIdentityTest::kPassword;
+            });
 
-    CBLError outError{};
-    CBLURLEndpointListener* listener = CBLURLEndpointListener_Create(&listenerConfig, &outError);
-    CHECK(outError.code == 0);
-    CHECK(listener);
+        URLEndpointListener listener(listenerConfig);
+        listener.start();
 
-    // Starts the listener.
-    outError.code = 0;
-    bool started = CBLURLEndpointListener_Start(listener, &outError);
-    CHECK(outError.code == 0);
-    CHECK(started);
+        // Starts a single shot replicator connecting to the listener.
+        configOneShotReplicator(listenerConfig, listener);
+        config.authenticator = Authenticator::basicAuthenticator((std::string_view)TLSIdentityTest::kUser,
+                                                                 (std::string_view)TLSIdentityTest::kPassword);
 
-    // Starts a single shot replicator connecting to the listener.
-    std::vector<CBLCollectionConfiguration> colConfigs;
-    configOneShotReplicator(listener, colConfigs);
-    config.authenticator = CBLAuth_CreatePassword(TLSIdentityTest::kUser, TLSIdentityTest::kPassword);
-    REQUIRE(config.authenticator);
+        replicate();
 
-    replicate();
-
-    // Stops the listener.
-    CBLURLEndpointListener_Stop(listener);
-
-    CBLURLEndpointListener_Release(listener);
-    CBLListenerAuth_Free(listenerConfig.authenticator);
+        listener.stop();
+    }
 
     // Release the identity and keypair now (rather than waiting for them to go out of scope)
     // so the counters below reflect the callbacks having actually fired.
@@ -264,7 +250,7 @@ TEST_CASE_METHOD(TLSIdentityTest_Cpp, "C++ Identity With Label", "[TLSIdentity]"
 #endif //#if !defined(__linux__) && !defined(__ANDROID__)
 
 TEST_CASE_METHOD(TLSIdentityTest_Cpp, "C++ Get CertChain", "[TLSIdentity]") {
-    string pemChain = URLEndpointListenerTest::readFile("cert_chain.pem");
+    string pemChain = URLEndpointListenerTest_Cpp::readFile("cert_chain.pem");
     Cert cert = Cert::createWithData(slice{pemChain});
     CHECK(cert);
 
@@ -289,30 +275,130 @@ TEST_CASE_METHOD(TLSIdentityTest_Cpp, "C++ Get CertChain", "[TLSIdentity]") {
     CHECK(!iter);
 }
 
-// The following tests from TLSIdentityTest.cc exercise a TLSIdentity together with a
-// CBLURLEndpointListener / replicator. They mostly re-exercise listener/replicator plumbing
-// rather than anything specific to this header, so they're left for whenever
-// include/cbl++/URLEndpointListener.hh gets a C++ wrapper (unlike "Self-Signed Identity with
-// PrivateKey Callback" above, which was worth porting now via KeyPair::ref()/TLSIdentity::ref()
-// since it's the only one that drives ExternalKeyHolder's decrypt/sign callbacks through a real
-// TLS handshake). Revisit once that wrapper exists:
-//   - "Use Identity Created with Label"
-//   - "Self-Signed Identity with Private KeyData"
-//   - "Identity from KeyPair and Certs"
-#if 0
+#if !defined(__linux__) && !defined(__ANDROID__)
 
-TEST_CASE_METHOD(URLEndpointListenerTest, "C++ Use Identity Created with Label", "[TLSIdentity]") {
-    // TODO: port using cbl::TLSIdentity + cbl::URLEndpointListener once the latter exists.
+TEST_CASE_METHOD(URLEndpointListenerTest_Cpp, "C++ Use Identity Created with Label", "[TLSIdentity]") {
+    TLSIdentity identity;
+
+    SECTION("First Pass - Create Identity with Label") {
+        // Clean the identity from the system.
+        (void)TLSIdentity::deleteIdentityWithLabel(TLSIdentityTest::Label);
+
+        MutableDict attributes = MutableDict::newDict();
+        attributes[kCBLCertAttrKeyCommonName] = TLSIdentityTest::CN;
+        identity = TLSIdentity::createIdentity(kCBLKeyUsagesServerAuth, attributes,
+                                               duration_cast<milliseconds>(TLSIdentityTest::OneYear).count(),
+                                               TLSIdentityTest::Label);
+    }
+
+    SECTION("Second Pass - Retrieve the Identity by the Label") {
+        identity = TLSIdentity::identityWithLabel(TLSIdentityTest::Label);
+        identityLabelsToDelete.emplace_back(TLSIdentityTest::Label);
+    }
+
+    CHECK(identity);
+
+    // Initializes a listener with a config with the TLS identity.
+    createNumberedDocsWithPrefix(cy[0], 20, "doc2");
+    createNumberedDocsWithPrefix(cy[1], 20, "doc2");
+    URLEndpointListenerConfiguration listenerConfig({cy[0], cy[1]});
+    listenerConfig.disableTLS = false;
+    listenerConfig.tlsIdentity = identity;
+    listenerConfig.authenticator = ListenerAuthenticator::certAuthenticator(
+        [](const Cert& cert) {
+            return cert.subjectName() == "CN=URLEndpointListener_Client";
+        });
+
+    URLEndpointListener listener(listenerConfig);
+    listener.start();
+
+    // Starts a single shot replicator to the listener.
+    configOneShotReplicator(listenerConfig, listener);
+    TLSIdentity clientIdentity = createTLSIdentity(false, false);
+    REQUIRE(clientIdentity);
+    config.authenticator = Authenticator::certificateAuthenticator(clientIdentity);
+
+    replicate();
+
+    // Checks that the replicator stopped without an error.
+    listener.stop();
 }
 
-TEST_CASE_METHOD(URLEndpointListenerTest, "C++ Self-Signed Identity with Private KeyData", "[TLSIdentity]") {
-    // TODO: port using cbl::TLSIdentity + cbl::URLEndpointListener once the latter exists.
+// T0011-3 TestCreateAndUseSelfSignedIdentityWithPrivateKeyData
+TEST_CASE_METHOD(URLEndpointListenerTest_Cpp, "C++ Self-Signed Identity with Private KeyData", "[TLSIdentity]") {
+    // Gets a pre-created RSA private key data in PEM format with a password from file.
+    string pemString = URLEndpointListenerTest_Cpp::readFile("private_key_pass.pem");
+    KeyPair privateKey = KeyPair::createWithPrivateKeyData(slice{pemString.c_str(), pemString.size() + 1}, "pass");
+    CHECK(privateKey);
+
+    // Create a self-signed identity with the KeyPair and CN = "CBL-Server".
+    MutableDict attributes = MutableDict::newDict();
+    attributes[kCBLCertAttrKeyCommonName] = TLSIdentityTest::CN;
+    TLSIdentity identity = TLSIdentity::createIdentity(
+        kCBLKeyUsagesServerAuth, privateKey, attributes,
+        duration_cast<milliseconds>(TLSIdentityTest::OneYear).count());
+    CHECK(identity);
+
+    // Initializes a listener with a config with the identity.
+    createNumberedDocsWithPrefix(cy[0], 20, "doc2");
+    createNumberedDocsWithPrefix(cy[1], 20, "doc2");
+    URLEndpointListenerConfiguration listenerConfig({cy[0], cy[1]});
+    listenerConfig.disableTLS = false;
+    listenerConfig.tlsIdentity = identity;
+    listenerConfig.authenticator = ListenerAuthenticator::passwordAuthenticator(
+        [](std::string_view usr, std::string_view psw) {
+            return slice(usr) == TLSIdentityTest::kUser && slice(psw) == TLSIdentityTest::kPassword;
+        });
+
+    URLEndpointListener listener(listenerConfig);
+    listener.start();
+
+    // Starts a single shot replicator to the listener.
+    configOneShotReplicator(listenerConfig, listener);
+    config.authenticator = Authenticator::basicAuthenticator((std::string_view)TLSIdentityTest::kUser,
+                                                             (std::string_view)TLSIdentityTest::kPassword);
+
+    replicate();
+
+    // Checks that the replicator stopped without an error.
+    listener.stop();
 }
 
-TEST_CASE_METHOD(URLEndpointListenerTest, "C++ Identity from KeyPair and Certs", "[TLSIdentity]") {
-    // TODO: port using cbl::TLSIdentity + cbl::URLEndpointListener once the latter exists.
-}
+#endif // #if !defined(__linux__) && !defined(__ANDROID__)
 
-#endif // #if 0
+// T0011-5 TestCreateAndUseIdentityFromKeyPairAndCerts
+TEST_CASE_METHOD(URLEndpointListenerTest_Cpp, "C++ Identity from KeyPair and Certs", "[TLSIdentity]") {
+    // Create a KeyPair object from a private key loaded from a PEM file.
+    string pem = URLEndpointListenerTest_Cpp::readFile("private_key_of_self_signed_cert.pem");
+    KeyPair privateKey = KeyPair::createWithPrivateKeyData(slice{pem.c_str(), pem.size() + 1});
+    CHECK(privateKey);
+
+    // Creates a Cert object from a PEM file.
+    pem = URLEndpointListenerTest_Cpp::readFile("self_signed_cert.pem");
+    Cert cert = Cert::createWithData(slice{pem.c_str(), pem.size() + 1});
+    CHECK(cert);
+
+    // Create an identity from the KeyPair and Cert object.
+    TLSIdentity identity = TLSIdentity::identityWithKeyPairAndCerts(privateKey, cert);
+    CHECK(identity);
+
+    // Initializes a listener with a config with the identity.
+    createNumberedDocsWithPrefix(cy[0], 20, "doc2");
+    createNumberedDocsWithPrefix(cy[1], 20, "doc2");
+    URLEndpointListenerConfiguration listenerConfig({cy[0], cy[1]});
+    listenerConfig.disableTLS = false;
+    listenerConfig.tlsIdentity = identity;
+
+    URLEndpointListener listener(listenerConfig);
+    listener.start();
+
+    // Starts a single shot replicator to the listener.
+    configOneShotReplicator(listenerConfig, listener);
+
+    replicate();
+
+    // Checks that the replicator stopped without an error.
+    listener.stop();
+}
 
 #endif // #ifdef COUCHBASE_ENTERPRISE
