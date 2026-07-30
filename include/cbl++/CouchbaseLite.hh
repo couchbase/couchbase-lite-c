@@ -101,4 +101,5 @@
 #include "QueryIndex.hh"
 #include "Replicator.hh"
 #include "TLSIdentity.hh"
+#include "URLEndpointListener.hh"
 #include "VectorIndex.hh"
