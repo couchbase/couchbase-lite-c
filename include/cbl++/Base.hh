@@ -141,16 +141,16 @@ namespace cbl {
             @param className  The class the trampoline belongs to, used only for the log message.
             @param what  A short description of the operation, used only for the log message. */
         template <class Fn>
-        inline bool invokeSafely(const char* className, const char* what, Fn&& fn) noexcept {
+        inline bool invokeSafely(CBLLogDomain logDomain, const char* className, const char* what, Fn&& fn) noexcept {
             try {
                 return fn();
             } catch (const cbl::Error& error) {
-                CBL_Log(kCBLLogDomainNetwork, kCBLLogError, "%s::%s threw error %d/%d: %s",
+                CBL_Log(logDomain, kCBLLogError, "%s::%s threw error %d/%d: %s",
                         className, what, error.domain, error.code, error.what());
             } catch (const std::exception& error) {
-                CBL_Log(kCBLLogDomainNetwork, kCBLLogError, "%s::%s threw %s", className, what, error.what());
+                CBL_Log(logDomain, kCBLLogError, "%s::%s threw %s", className, what, error.what());
             } catch (...) {
-                CBL_Log(kCBLLogDomainNetwork, kCBLLogError, "%s::%s threw an unknown exception", className, what);
+                CBL_Log(logDomain, kCBLLogError, "%s::%s threw an unknown exception", className, what);
             }
             return false;
         }

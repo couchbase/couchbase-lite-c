@@ -121,13 +121,13 @@ namespace cbl {
         // internal::invokeSafely helper) -- so any exception the user's callback throws is caught,
         // logged, and turned into a plain authentication failure (false) instead.
         static bool _callPasswordAuth(void* context, FLString username, FLString password) noexcept {
-            return internal::invokeSafely("ListenerAuthenticator", "passwordAuthCallback", [&] {
+            return internal::invokeSafely(kCBLLogDomainListener, "ListenerAuthenticator", "passwordAuthCallback", [&] {
                 return std::get<PasswordAuthCallback>(*(Callback*)context)(slice(username), slice(password));
             });
         }
 
         static bool _callCertAuth(void* context, CBLCert* cert) noexcept {
-            return internal::invokeSafely("ListenerAuthenticator", "certAuthCallback", [&] {
+            return internal::invokeSafely(kCBLLogDomainListener, "ListenerAuthenticator", "certAuthCallback", [&] {
                 return std::get<CertAuthCallback>(*(Callback*)context)(Cert(cert));
             });
         }

@@ -102,12 +102,12 @@ namespace cbl {
                 try {
                     customFree(externalKey);
                 } catch (const cbl::Error& error) {
-                    CBL_Log(kCBLLogDomainNetwork, kCBLLogError, "ExternalKeyHolder::customFree threw error %d/%d: %s",
+                    CBL_Log(kCBLLogDomainListener, kCBLLogError, "ExternalKeyHolder::customFree threw error %d/%d: %s",
                             error.domain, error.code, error.what());
                 } catch (const std::exception& error) {
-                    CBL_Log(kCBLLogDomainNetwork, kCBLLogError, "ExternalKeyHolder::customFree threw %s", error.what());
+                    CBL_Log(kCBLLogDomainListener, kCBLLogError, "ExternalKeyHolder::customFree threw %s", error.what());
                 } catch (...) {
-                    CBL_Log(kCBLLogDomainNetwork, kCBLLogError, "ExternalKeyHolder::customFree threw an unknown exception");
+                    CBL_Log(kCBLLogDomainListener, kCBLLogError, "ExternalKeyHolder::customFree threw an unknown exception");
                 }
             }
 
@@ -145,21 +145,21 @@ namespace cbl {
             CBLExternalKeyCallbacks cCallbacks = {};
             cCallbacks.publicKeyData = [](void* rawContext, void* output, size_t outputMaxLen,
                                           size_t* outputLen) -> bool {
-                return internal::invokeSafely("ExternalKeyHolder", "publicKeyData", [&] {
+                return internal::invokeSafely(kCBLLogDomainListener, "ExternalKeyHolder", "publicKeyData", [&] {
                     auto& holder = ((ExternalKeyContext*)rawContext)->holder;
                     return copyResult(holder.publicKeyData(holder.externalKey), output, outputMaxLen, outputLen);
                 });
             };
             cCallbacks.decrypt = [](void* rawContext, FLSlice input, void* output, size_t outputMaxLen,
                                     size_t* outputLen) -> bool {
-                return internal::invokeSafely("ExternalKeyHolder", "decrypt", [&] {
+                return internal::invokeSafely(kCBLLogDomainListener, "ExternalKeyHolder", "decrypt", [&] {
                     auto& holder = ((ExternalKeyContext*)rawContext)->holder;
                     return copyResult(holder.decrypt(holder.externalKey, input), output, outputMaxLen, outputLen);
                 });
             };
             cCallbacks.sign = [](void* rawContext, CBLSignatureDigestAlgorithm digestAlgorithm,
                                  FLSlice inputData, void* outSignature) -> bool {
-                return internal::invokeSafely("ExternalKeyHolder", "sign", [&] {
+                return internal::invokeSafely(kCBLLogDomainListener, "ExternalKeyHolder", "sign", [&] {
                     auto* context = (ExternalKeyContext*)rawContext;
                     auto& holder  = context->holder;
                     auto  result  = holder.sign(holder.externalKey, digestAlgorithm, inputData);
