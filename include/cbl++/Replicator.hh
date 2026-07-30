@@ -18,6 +18,7 @@
 
 #pragma once
 #include "cbl++/Document.hh"
+#include "cbl++/TLSIdentity.hh"
 #include "cbl/CBLReplicator.h"
 #include "cbl/CBLDefaults.h"
 #include <functional>
@@ -88,6 +89,16 @@ namespace cbl {
             if ( cookieName ) cname = *cookieName;
             return Authenticator(CBLAuth_CreateSession(slice(sessionId), cname));
         }
+
+#ifdef COUCHBASE_ENTERPRISE
+        /** Creates a certificate authenticator using a TLS client identity. (Enterprise Edition only.) */
+        static Authenticator certificateAuthenticator(const TLSIdentity& identity) {
+            if ( !identity ) {
+                throw Error{kCBLDomain, kCBLErrorInvalidParameter, "identity must not be empty"};
+            }
+            return Authenticator(CBLAuth_CreateCertificate(identity.ref()));
+        }
+#endif
 
     protected:
         friend class ReplicatorConfiguration;
