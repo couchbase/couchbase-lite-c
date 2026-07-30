@@ -18,18 +18,16 @@
 
 #pragma once
 #include "cbl/CBLBase.h"
+#include "cbl/CBLLog.h"
 #include "cbl/CBLQueryTypes.h"
 #include "fleece/slice.hh"
 #include <algorithm>
+#include <exception>
 #include <functional>
 #include <cassert>
 #include <memory>
 #include <stdexcept>
 #include <utility>
-
-#if DEBUG
-#include "cbl/CBLLog.h"
-#endif
 
 
 CBL_ASSUME_NONNULL_BEGIN
@@ -132,6 +130,29 @@ namespace cbl {
 #endif
                 throw cbl::Error{error.domain, error.code, message.asString()};
             }
+        }
+
+        /** Invokes fn (typically a user-supplied C++ callback), catching and logging any exception
+            it throws instead of letting it escape, and returning `false` instead. For use by
+            trampolines that bridge a C++ callable into a plain C-API callback invoked from a
+            context that isn't C++-exception-safe (e.g. a network/TLS layer mid-handshake, possibly
+            backed by plain C underneath) -- an escaping exception there wouldn't propagate to any
+            caller, it would just call std::terminate() and kill the whole process.
+            @param className  The class the trampoline belongs to, used only for the log message.
+            @param what  A short description of the operation, used only for the log message. */
+        template <class Fn>
+        inline bool invokeSafely(CBLLogDomain logDomain, const char* className, const char* what, Fn&& fn) noexcept {
+            try {
+                return fn();
+            } catch (const cbl::Error& error) {
+                CBL_Log(logDomain, kCBLLogError, "%s::%s threw error %d/%d: %s",
+                        className, what, error.domain, error.code, error.what());
+            } catch (const std::exception& error) {
+                CBL_Log(logDomain, kCBLLogError, "%s::%s threw %s", className, what, error.what());
+            } catch (...) {
+                CBL_Log(logDomain, kCBLLogError, "%s::%s threw an unknown exception", className, what);
+            }
+            return false;
         }
     }
 

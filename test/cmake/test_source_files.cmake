@@ -39,6 +39,7 @@ function(set_test_source_files)
         ${T_DIR}/TLSIdentityTest.cc
         ${T_DIR}/TLSIdentityTest_Cpp.cc
         ${T_DIR}/URLEndpointListenerTest.cc
+        ${T_DIR}/URLEndpointListenerTest_Cpp.cc
         ${T_DIR}/VectorSearchTest.cc
         ${T_DIR}/VectorSearchTest_Cpp.cc
         ${T_DIR}/LazyVectorIndexTest.cc
