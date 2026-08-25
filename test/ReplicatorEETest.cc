@@ -726,6 +726,44 @@ TEST_CASE_METHOD(ReplicatorConflictTest, "Custom resolver : merge", "[Replicator
 }
 
 
+TEST_CASE_METHOD(ReplicatorConflictTest, "Custom resolver : both deleted", "[Replicator][Conflict]") {
+    // Deleting the doc on both sides leaves nothing for the resolver to work with, so the
+    // conflict is resolved as the remote deletion and the resolver is never called:
+    docID = "doc1";
+
+    MutableDocument doc(docID);
+    doc["greeting"] = "Howdy!";
+    defaultCollection.saveDocument(doc);
+    defaultCollection.deleteDocument(doc);
+
+    doc = MutableDocument(docID);
+    doc["greeting"] = "Howdy!";
+    otherDBDefaultCol.saveDocument(doc);
+    otherDBDefaultCol.deleteDocument(doc);
+
+    replicatedDocIDs.clear();
+    resolverCalled = false;
+
+    configureCollectionConfigs(config, [](CBLReplicationCollection& colConfig) {
+        colConfig.conflictResolver = [](void *context,
+                                        FLString documentID,
+                                        const CBLDocument *localDocument,
+                                        const CBLDocument *remoteDocument) -> const CBLDocument* {
+            ((ReplicatorConflictTest*)context)->resolverCalled = true;
+            return localDocument;
+        };
+    });
+
+    config.replicatorType = kCBLReplicatorTypePull;
+    resetReplicator();
+    replicate();
+
+    CHECK(asVector(replicatedDocIDs) == vector<string>{docID});
+    CHECK(!resolverCalled);
+    CHECK(!defaultCollection.getDocument(docID));
+}
+
+
 TEST_CASE_METHOD(ReplicatorLocalTest, "Document Replication Listener", "[Replicator]") {
     // No listener:
     MutableDocument doc("foo");
