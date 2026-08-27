@@ -249,7 +249,9 @@ bool CBLDocument::resolveConflict(Resolution resolution, const CBLDocument * _cb
     _fromJSON = nullptr;
 
     // Remote Revision always win so that the resolved revision will not conflict with the remote:
-    slice winner(c4doc->selectedRev().revID), loser(c4doc->revID());
+    // Note: Use alloc_slice to retain the revIDs, as the c4doc's revID storage they point into
+    // may be freed while the document is mutated inside c4doc->resolveConflict():
+    alloc_slice winner(c4doc->selectedRev().revID), loser(c4doc->revID());
 
     // Note: shared lock b/w database and collection
     return _collection->useLocked<bool>([&](C4Collection *c4col) {
