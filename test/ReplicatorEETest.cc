@@ -739,6 +739,12 @@ TEST_CASE_METHOD(ReplicatorConflictTest, "Custom resolver : both deleted", "[Rep
     doc = MutableDocument(docID);
     doc["greeting"] = "Howdy!";
     otherDBDefaultCol.saveDocument(doc);
+    // create a new live version before delete
+    // Without this new version, the two deleted version would be considered
+    // the same and the ensuing Pull replication won't won't receive the remote one
+    // and create conflict on the local DB.
+    doc["greeting"] = "";
+    otherDBDefaultCol.saveDocument(doc);
     otherDBDefaultCol.deleteDocument(doc);
 
     replicatedDocIDs.clear();
