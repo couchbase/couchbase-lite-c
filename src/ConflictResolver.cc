@@ -181,6 +181,12 @@ namespace cbl_internal {
         if (localDoc && localDoc->revisionFlags() & kRevDeleted)
             localDoc = nullptr;
 
+        // A conflict between two deletions has nothing to resolve, and there is no document to
+        // hand the resolver. Take the remote (deleted) revision without calling the resolver,
+        // which is what defaultResolve() already ends up doing for this case:
+        if (!localDoc && !remoteDoc)
+            return conflict->resolveConflict(CBLDocument::Resolution::useRemote, nullptr);
+
         // Call the custom resolver (this could take a long time to return)
         SyncLog(Verbose, "Calling custom conflict resolver for doc '%.*s' ...",
                 FMTSLICE(_docID));
