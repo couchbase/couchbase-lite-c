@@ -66,7 +66,7 @@ void CBLListenerAuth_Free(CBLListenerAuthenticator* _cbl_nullable) CBLAPI;
 /** The configuration for the URLEndpointListener. */
 typedef struct {
     /** (Required) The collections available for replication . */
-    CBLCollection* _cbl_nonnull * _cbl_nonnull collections;
+    CBLCollection* _cbl_nonnull * _cbl_nullable collections;
 
     /** (Required) The number of collections  (Required). */
     size_t collectionCount;

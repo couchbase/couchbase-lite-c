@@ -154,13 +154,13 @@ CBLKeyPair* CBLCert_PublicKey(CBLCert*) CBLAPI;
 
 /** Digest algorithms to be used when generating signatures with a private key. */
 typedef CBL_ENUM(int, CBLSignatureDigestAlgorithm) {
-    kCBLSignatureDigestNone = 0,   ///< No digest, just direct signature of input data.
-    kCBLSignatureDigestSHA1 = 4,   ///< SHA-1 message digest.
-    kCBLSignatureDigestSHA224,     ///< SHA-224 message digest.
-    kCBLSignatureDigestSHA256,     ///< SHA-256 message digest.
-    kCBLSignatureDigestSHA384,     ///< SHA-384 message digest.
-    kCBLSignatureDigestSHA512,     ///< SHA-512 message digest.
-    kCBLSignatureDigestRIPEMD160,  ///< RIPEMD-160 message digest.
+    kCBLSignatureDigestNone      = 0,  ///< No digest, just direct signature of input data.
+    kCBLSignatureDigestRIPEMD160 = 4,  ///< RIPEMD-160 message digest.
+    kCBLSignatureDigestSHA1,           ///< SHA-1 message digest.
+    kCBLSignatureDigestSHA224    = 8,  ///< SHA-224 message digest.
+    kCBLSignatureDigestSHA256,         ///< SHA-256 message digest.
+    kCBLSignatureDigestSHA384,         ///< SHA-384 message digest.
+    kCBLSignatureDigestSHA512          ///< SHA-512 message digest.
 };
 
 /** Callbacks for performing cryptographic operations with an externally managed key pair.

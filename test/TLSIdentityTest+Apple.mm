@@ -133,12 +133,12 @@ struct TLSIdentityTest::ExternalKey::Impl {
         @autoreleasepool {
             // Map mbedTLS digest algorithm ID to SecKey algorithm ID:
             static const std::unordered_map<int, SecKeyAlgorithm> kDigestAlgorithmMap{
-                {0 /*MBEDTLS_MD_NONE*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw},
-                {5 /*MBEDTLS_MD_SHA1*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1},
-                {8 /*MBEDTLS_MD_SHA224*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224},
-                {9 /*MBEDTLS_MD_SHA256*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256},
-                {10 /*MBEDTLS_MD_SHA384*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384},
-                {11 /*MBEDTLS_MD_SHA512*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512}
+                {kCBLSignatureDigestNone,   kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw},
+                {kCBLSignatureDigestSHA1,   kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1},
+                {kCBLSignatureDigestSHA224, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224},
+                {kCBLSignatureDigestSHA256, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256},
+                {kCBLSignatureDigestSHA384, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384},
+                {kCBLSignatureDigestSHA512, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512}
             };
 
             SecKeyAlgorithm digestAlgorithm = nullptr;
