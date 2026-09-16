@@ -77,8 +77,8 @@ struct TLSIdentityTest::ExternalKey::Impl {
         return true;
     }
 
-    bool sign(int/*mbedtls_md_type_t*/ mbedDigestAlgorithm, fleece::slice inputData, void* outSignature) {
-        auto result = sign(CBLSignatureDigestAlgorithm(mbedDigestAlgorithm), inputData);
+    bool sign(CBLSignatureDigestAlgorithm digestAlgorithm, fleece::slice inputData, void* outSignature) {
+        auto result = sign(digestAlgorithm, inputData);
         if (!result) return false;
         memcpy(outSignature, result->buf, result->size);
         return true;
@@ -127,27 +127,29 @@ struct TLSIdentityTest::ExternalKey::Impl {
         }
     }
 
-    std::optional<fleece::alloc_slice> sign(CBLSignatureDigestAlgorithm mbedDigestAlgorithm, fleece::slice inputData) {
+    std::optional<fleece::alloc_slice> sign(CBLSignatureDigestAlgorithm digestAlgorithm, fleece::slice inputData) {
         // No exceptions may be thrown from this function!
         CBL_Log(kCBLLogDomainListener, kCBLLogInfo, "Signing using Keychain private key");
         @autoreleasepool {
-            // Map mbedTLS digest algorithm ID to SecKey algorithm ID:
-            static const std::unordered_map<int, SecKeyAlgorithm> kDigestAlgorithmMap{
-                {0 /*MBEDTLS_MD_NONE*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw},
-                {5 /*MBEDTLS_MD_SHA1*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1},
-                {8 /*MBEDTLS_MD_SHA224*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224},
-                {9 /*MBEDTLS_MD_SHA256*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256},
-                {10 /*MBEDTLS_MD_SHA384*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384},
-                {11 /*MBEDTLS_MD_SHA512*/, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512}
+            // Map the public CBL digest algorithm to the corresponding SecKey algorithm.
+            // Keyed by the CBL enum itself -- never by a raw/mbedTLS numeric value -- so this
+            // stays correct regardless of how CBLSignatureDigestAlgorithm's values are assigned.
+            static const std::unordered_map<CBLSignatureDigestAlgorithm, SecKeyAlgorithm> kDigestAlgorithmMap{
+                {kCBLSignatureDigestNone,   kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw},
+                {kCBLSignatureDigestSHA1,   kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1},
+                {kCBLSignatureDigestSHA224, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224},
+                {kCBLSignatureDigestSHA256, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256},
+                {kCBLSignatureDigestSHA384, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384},
+                {kCBLSignatureDigestSHA512, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512}
             };
 
-            SecKeyAlgorithm digestAlgorithm = nullptr;
-            if (kDigestAlgorithmMap.contains(mbedDigestAlgorithm)) {
-                digestAlgorithm = kDigestAlgorithmMap.at(mbedDigestAlgorithm);
+            SecKeyAlgorithm secKeyAlgorithm = nullptr;
+            if (kDigestAlgorithmMap.contains(digestAlgorithm)) {
+                secKeyAlgorithm = kDigestAlgorithmMap.at(digestAlgorithm);
             }
 
-            if (!digestAlgorithm) {
-                CBL_Log(kCBLLogDomainListener, kCBLLogWarning, "Keychain private key: unsupported mbedTLS digest algorithm %d", mbedDigestAlgorithm);
+            if (!secKeyAlgorithm) {
+                CBL_Log(kCBLLogDomainListener, kCBLLogWarning, "Keychain private key: unsupported digest algorithm %d", digestAlgorithm);
                 return std::nullopt;
             }
 
@@ -155,7 +157,7 @@ struct TLSIdentityTest::ExternalKey::Impl {
             NSData* data = uncopiedNSData(inputData);
             CFErrorRef error{nullptr};
             NSData* sigData = CFBridgingRelease(SecKeyCreateSignature(_privateKeyRef,
-                                                                      digestAlgorithm,
+                                                                      secKeyAlgorithm,
                                                                       (CFDataRef)data, &error));
             if (!sigData) {
                 warnCFError(error, "SecKeyCreateSignature");
@@ -219,8 +221,8 @@ bool TLSIdentityTest::ExternalKey::decrypt(fleece::slice input, void *output, si
     return _impl->decrypt(input, output, output_max_len, output_len);
 }
 
-bool TLSIdentityTest::ExternalKey::sign(CBLSignatureDigestAlgorithm mbedDigestAlgorithm, fleece::slice inputData, void *outSignature) {
-    return _impl->sign(mbedDigestAlgorithm, inputData, outSignature);
+bool TLSIdentityTest::ExternalKey::sign(CBLSignatureDigestAlgorithm digestAlgorithm, fleece::slice inputData, void *outSignature) {
+    return _impl->sign(digestAlgorithm, inputData, outSignature);
 }
 
 // For C++ API
@@ -232,8 +234,8 @@ std::optional<fleece::alloc_slice> TLSIdentityTest::ExternalKey::decrypt(fleece:
     return _impl->decrypt(input);
 }
 
-std::optional<fleece::alloc_slice> TLSIdentityTest::ExternalKey::sign(CBLSignatureDigestAlgorithm mbedDigestAlgorithm, fleece::slice inputData) {
-    return _impl->sign(mbedDigestAlgorithm, inputData);
+std::optional<fleece::alloc_slice> TLSIdentityTest::ExternalKey::sign(CBLSignatureDigestAlgorithm digestAlgorithm, fleece::slice inputData) {
+    return _impl->sign(digestAlgorithm, inputData);
 }
 
 #endif // #ifdef COUCHBASE_ENTERPRISE

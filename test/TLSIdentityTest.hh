@@ -43,12 +43,12 @@ public:
 
         bool publicKeyData(void* output, size_t outputMaxLen, size_t* outputLen);
         bool decrypt(fleece::slice input, void *output, size_t output_max_len, size_t *output_len);
-        bool sign(CBLSignatureDigestAlgorithm mbedDigestAlgorithm, fleece::slice inputData, void *outSignature);
+        bool sign(CBLSignatureDigestAlgorithm digestAlgorithm, fleece::slice inputData, void *outSignature);
 
         // For C++ APIs
         std::optional<fleece::alloc_slice> publicKeyData();
         std::optional<fleece::alloc_slice> decrypt(fleece::slice input);
-        std::optional<fleece::alloc_slice> sign(CBLSignatureDigestAlgorithm mbedDigestAlgorithm, fleece::slice inputData);
+        std::optional<fleece::alloc_slice> sign(CBLSignatureDigestAlgorithm digestAlgorithm, fleece::slice inputData);
 
     private:
         struct Impl;
