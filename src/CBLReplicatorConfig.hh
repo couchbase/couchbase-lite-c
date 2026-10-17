@@ -67,12 +67,13 @@ namespace cbl_internal {
         {
             if (!C4Address::fromURL(_url, &_address, (fleece::slice*)&_dbName)) {
                 C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
-                               "Invalid URLEndpoint url '%.*s'", FMTSLICE(_url));
+                               "Invalid URLEndpoint url. It must be a 'ws:' or 'wss:' URL with a database name "
+                               "and without embedded credentials.");
             } else if (_address.scheme != kC4Replicator2Scheme &&
                        _address.scheme != kC4Replicator2TLSScheme) {
                 C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
-                               "Invalid scheme for URLEndpoint url '%.*s'. It must be either 'ws:' or 'wss:'.",
-                               FMTSLICE(_url));
+                               "Invalid scheme '%.*s' for URLEndpoint url. It must be either 'ws:' or 'wss:'.",
+                               FMTSLICE(_address.scheme));
             }
         }
 
@@ -190,7 +191,7 @@ namespace cbl_internal {
     struct SessionAuthenticator : public CBLAuthenticator {
         SessionAuthenticator(slice sessionID, slice cookieName)
         :_sessionID(sessionID)
-        ,_cookieName(cookieName ? cookieName : kDefaultCookieName)
+        ,_cookieName(cookieName.size > 0 ? cookieName : kDefaultCookieName)
         { }
 
         static constexpr const char* kDefaultCookieName = "SyncGatewaySession";
