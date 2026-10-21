@@ -162,6 +162,7 @@ CBL_C {
 		CBLLog_EndExpectingExceptions;
 		CBLLog_Reset;
 		CBLLog_LogWithC4Log;
+		CBLLog_LogWithC4LogDomain;
 		CBL_DeleteDirectoryRecursive;
 		kCBLDefaultDatabaseFullSync;
 		kCBLDefaultLogFileUsePlaintext;
