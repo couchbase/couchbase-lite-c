@@ -67,7 +67,7 @@ _cbl_warn_unused
 CBLAuthenticator* CBLAuth_CreatePassword(FLString username, FLString password) CBLAPI;
 
 /** Creates an authenticator using a Couchbase Sync Gateway login session identifier,
-    and optionally a cookie name (pass NULL for the default.)
+    and optionally a cookie name (pass `kFLSliceNull` for the default.)
 @note You are responsible for freeing the returned reference. */
 _cbl_warn_unused
 CBLAuthenticator* CBLAuth_CreateSession(FLString sessionID, FLString cookieName) CBLAPI;
