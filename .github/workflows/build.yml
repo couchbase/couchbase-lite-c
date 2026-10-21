@@ -23,6 +23,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    env:
+      # LiteCore 4.0 doesn't build with Xcode 26.4 or later.
+      DEVELOPER_DIR: ${{ matrix.os == 'macOS-latest' && '/Applications/Xcode_26.3.app/Contents/Developer' || '' }}
 
     steps:
     - uses: actions/checkout@v2
