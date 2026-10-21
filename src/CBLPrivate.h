@@ -100,6 +100,10 @@ FLMutableArray CBLCollection_GetIndexesInfo(const CBLCollection* collection,
     /** Use c4log to log the message so that the message will be sent to LiteCore's callback and file logging */
     void CBLLog_LogWithC4Log(CBLLogDomain domain, CBLLogLevel level, const char *message) CBLAPI;
 
+    /** Use c4log to log the message to the LiteCore log domain with the given name (e.g. "TLS").
+        Returns false if the domain doesn't exist. This is for log API testing purpose. */
+    bool CBLLog_LogWithC4LogDomain(const char* domainName, CBLLogLevel level, const char *message) CBLAPI;
+
     /** A utility for deleting directory recursively used in tests. This function is using LiteCore's FilePath which is cross-platform.
         TODO: When std::filesystem available from C++ 17 can be used, we can get rid of this function. */
     bool CBL_DeleteDirectoryRecursive(FLString dir, CBLError* _cbl_nullable outError) CBLAPI;
