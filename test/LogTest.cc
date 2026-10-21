@@ -627,6 +627,31 @@ TEST_CASE_METHOD(LogTest, "Custom Log Sink : Domains", "[Log]") {
     }
 }
 
+// CBL-9170: TLS domain stays at LiteCore's default level (Warning); its logs are mapped to Network.
+TEST_CASE_METHOD(LogTest, "Custom Log Sink : TLS Domain", "[Log]") {
+    static vector<pair<CBLLogDomain, CBLLogLevel>> recs;
+    recs.clear();
+    
+    CBLCustomLogSink logSink {};
+    logSink.level = kCBLLogDebug;
+    logSink.callback = [](CBLLogDomain domain, CBLLogLevel level, FLString msg) {
+        recs.emplace_back(domain, level);
+    };
+    CBLLogSinks_SetCustom(logSink);
+    
+    for (CBLLogLevel level : kLogLevels) {
+        if (level == kCBLLogNone)
+            continue;
+        REQUIRE(CBLLog_LogWithC4LogDomain("TLS", level, kLogLevelNames[level].c_str()));
+    }
+    
+    REQUIRE(recs.size() == 2);
+    CHECK(recs[0].first == kCBLLogDomainNetwork);
+    CHECK(recs[0].second == kCBLLogWarning);
+    CHECK(recs[1].first == kCBLLogDomainNetwork);
+    CHECK(recs[1].second == kCBLLogError);
+}
+
 TEST_CASE_METHOD(LogTest, "File Log Sink : Log Level", "[Log]") {
     CBLFileLogSink logSink {};
     logSink.directory = slice(logDir());
