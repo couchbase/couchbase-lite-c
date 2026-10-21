@@ -16,7 +16,7 @@ pipeline {
                    }
                 }
                 stage("Apple") {
-                    agent { label 'mobile-mac-mini'  }
+                    agent { label 'sonoma'  }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
                         GH_PAT = credentials("cbl-bot-github-pat")
