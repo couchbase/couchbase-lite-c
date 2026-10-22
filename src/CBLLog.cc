@@ -69,3 +69,13 @@ void CBLLog_Reset(void) CBLAPI {
 void CBLLog_LogWithC4Log(CBLLogDomain domain, CBLLogLevel level, const char *message) CBLAPI {
     CBLLogSinks::logWithC4Log(domain, level, message);
 }
+
+/** Private API */
+bool CBLLog_LogWithC4LogDomain(const char* domainName, CBLLogLevel level, const char *message) CBLAPI {
+    C4LogDomain domain = c4log_getDomain(domainName, false);
+    if (!domain) {
+        return false;
+    }
+    c4log(domain, C4LogLevel(level), "%s", message);
+    return true;
+}
