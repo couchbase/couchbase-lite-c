@@ -44,7 +44,8 @@ CBLFileLogSink CBLLogSinks::_sFileSink { kCBLLogNone, kFLSliceNull };
 
 std::shared_mutex CBLLogSinks::_sMutex;
 
-static const char* kC4ExtraDomains[] = { "SyncBusy", "Changes", "BLIPMessages", "TLS", "Zip" };
+// Note: "TLS" is left at LiteCore's default level; its logs are still mapped to Network.
+static const char* kC4ExtraDomains[] = { "SyncBusy", "Changes", "BLIPMessages", "Zip" };
 
 const std::vector<C4LogDomain>& CBLLogSinks::c4LogDomains() {
     static const std::vector<C4LogDomain> c4Domains = [] {
