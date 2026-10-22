@@ -46,8 +46,9 @@ alloc_slice CBLLogSinks::_sLogFileDir;
 
 std::shared_mutex CBLLogSinks::_sMutex;
 
+// Note: "TLS" is left at LiteCore's default level; its logs are still mapped to Network.
 static const char* kC4LogDomains[] = { "DB", "Query", "Sync", "WS", "Listener", "SyncBusy",
-                                       "Changes", "BLIPMessages", "TLS", "Zip" };
+                                       "Changes", "BLIPMessages", "Zip" };
 
 const std::vector<C4LogDomain>& CBLLogSinks::c4LogDomains() {
     static const std::vector<C4LogDomain> c4Domains = [] {
