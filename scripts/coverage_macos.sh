@@ -14,7 +14,7 @@
 
 function usage 
 {
-  echo "Usage: ${0} [--ce] [--show] [--push]"
+  echo "Usage: ${0} [--ce] [--show] [--push <PR number>]"
 }
 
 while [[ $# -gt 0 ]]
@@ -28,7 +28,12 @@ do
       SHOW="Y"
       ;;
       --push)
-      PUSH="Y"
+      PR_NUMBER=${2}
+      if [[ -z "$PR_NUMBER" ]]; then
+        usage
+        exit 3
+      fi
+      shift
       ;;
       *)
       usage
@@ -48,25 +53,9 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")"; pwd)";
 pushd $SCRIPT_DIR/.. > /dev/null
 
-# If calling from a PR Validation :
-if [[ -n "$CHANGE_ID" ]]; then
-  git submodule update --init --recursive
-  if [[ "$BUILD_ENTERPRISE" == "ON" ]]; then
-    pushd vendor
-    if [[ $CHANGE_TARGET == "master" ]]; then
-      BRANCH="main"
-    else
-      BRANCH=$CHANGE_TARGET
-    fi
-    rm -rf couchbase-lite-c-ee couchbase-lite-core-EE
-    git clone ssh://git@github.com/couchbase/couchbase-lite-c-ee --branch $BRANCH_NAME --recursive --depth 1 couchbase-lite-c-ee || \
-      git clone ssh://git@github.com/couchbase/couchbase-lite-c-ee --branch $BRANCH --recursive --depth 1 couchbase-lite-c-ee
-    mv couchbase-lite-c-ee/couchbase-lite-core-EE .
-    popd
-  fi
-fi
-
 if [[ "$BUILD_ENTERPRISE" == "ON" ]]; then
+  [[ -d ../couchbase-lite-c-ee/src && -d vendor/couchbase-lite-core-EE ]] || \
+    { echo "EE sources not found; see AGENTS.md for the layout"; exit 1; }
   ./scripts/download_vector_search_extension.sh apple
 fi
 
@@ -119,12 +108,12 @@ if [[ -n "$SHOW" ]]; then
   open report/index.html
 fi
 
-if [[ -n "$PUSH" ]] && [[ -n "$CHANGE_ID" ]]; then
-  echo "Pushing the coverage result to PR #$CHANGE_ID ..."
+if [[ -n "$PR_NUMBER" ]]; then
+  echo "Pushing the coverage result to PR #$PR_NUMBER ..."
   python3 -m venv venv
   source venv/bin/activate 
   pip install -r $SCRIPT_DIR/push_coverage_results_requirements.txt
-  python $SCRIPT_DIR/push_coverage_results.py -r report/coverage.json -n $CHANGE_ID
+  python $SCRIPT_DIR/push_coverage_results.py -r report/coverage.json -n $PR_NUMBER
 fi
 
 echo "Done : The coverage report was generated at build_coverage/report"

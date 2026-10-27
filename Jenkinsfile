@@ -24,7 +24,7 @@ pipeline {
                     }
                     steps {
                         sh 'jenkins/jenkins_ios.sh'
-                        sh 'couchbase-lite-c/scripts/coverage_macos.sh --push'
+                        sh 'couchbase-lite-c/scripts/coverage_macos.sh --push "$CHANGE_ID"'
                     }
                 }
                 stage("Linux") {
